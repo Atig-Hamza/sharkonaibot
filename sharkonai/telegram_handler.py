@@ -20,7 +20,7 @@ from config import CONFIG
 from logger import log
 from memory import Memory
 from brain import Brain
-from tools import dispatch_tool
+from tools import dispatch_tool, transcribe_audio
 
 # ── Setup ───────────────────────────────────────────────────────────────────
 
@@ -443,7 +443,7 @@ async def handle_photo(message: Message):
 
 @router.message(F.voice)
 async def handle_voice(message: Message):
-    """Handle voice messages — download and notify AI."""
+    """Handle voice messages — auto-transcribe and process as text."""
     user_id = message.from_user.id
 
     if not is_authorized(user_id):
@@ -458,27 +458,104 @@ async def handle_voice(message: Message):
     file_path = os.path.join(downloads_dir, f"voice_{voice.file_unique_id}.ogg")
 
     try:
+        # Show status
+        status_msg = await message.reply("🎤 Listening to your voice message...")
+
+        # Download the voice file
         file = await message.bot.get_file(voice.file_id)
         await message.bot.download_file(file.file_path, destination=file_path)
 
-        await _memory.store_message(
-            role="user",
-            content=f"[Voice message received, duration: {voice.duration}s, saved to: {file_path}]",
-            user_id=user_id,
-            message_id=message.message_id,
-        )
+        # Transcribe the audio
+        await safe_edit(status_msg, "🎤 Transcribing your voice...")
+        transcription_result = await transcribe_audio(file_path, language="en-US")
 
-        voice_msg = (
-            f"The user sent a voice message ({voice.duration} seconds). "
-            f"Saved to: {file_path}. "
-            "I cannot transcribe audio directly, but the file is available for processing."
-        )
+        if transcription_result.success:
+            # Extract the transcribed text
+            transcribed_text = transcription_result.stdout.replace("🎤 Transcription:\n", "").strip()
+            log.info(f"Voice transcription: {transcribed_text[:100]}...")
 
-        decision = await _brain.think(voice_msg)
-        response_text = decision.get("response", "🎤 Voice message received and saved.")
+            # Update status with what was heard
+            await safe_edit(status_msg, f"🎤 Heard: \"{transcribed_text}\"\n\n⏳ Processing...")
 
-        await _memory.store_message(role="assistant", content=response_text)
-        await safe_reply(message, response_text)
+            # Store the transcribed message in memory (as if user typed it)
+            await _memory.store_message(
+                role="user",
+                content=f"[Voice message] {transcribed_text}",
+                user_id=user_id,
+                message_id=message.message_id,
+                metadata={"type": "voice", "duration": voice.duration, "audio_path": file_path},
+            )
+
+            # Process the transcribed text through the brain (same as text handler)
+            await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+            decision = await _brain.think(transcribed_text)
+            decision["_original_message"] = transcribed_text
+
+            action = decision.get("action", "none")
+
+            if action and action != "none":
+                # Execute tool chain
+                # Delete status msg before tool chain creates its own
+                try:
+                    await status_msg.delete()
+                except Exception:
+                    pass
+                status_msg = None
+
+                final_response, chain_context = await execute_tool_chain(
+                    message, transcribed_text, decision
+                )
+
+                if len(chain_context) > 1:
+                    steps_summary = f"\n\n📋 Completed {len(chain_context)} steps"
+                    success_count = sum(1 for s in chain_context if s["success"])
+                    if success_count == len(chain_context):
+                        steps_summary += " — all successful ✅"
+                    else:
+                        steps_summary += f" — {success_count}/{len(chain_context)} successful"
+                    final_response += steps_summary
+            else:
+                final_response = decision.get("response", "")
+
+            # Clean up status message if still exists
+            if status_msg:
+                try:
+                    await status_msg.delete()
+                except Exception:
+                    pass
+
+            # Store and send response
+            await _memory.store_message(role="assistant", content=final_response)
+            await safe_reply(message, final_response)
+
+        else:
+            # Transcription failed — notify user, still pass to brain with context
+            log.warning(f"Voice transcription failed: {transcription_result.stderr}")
+            await safe_edit(status_msg, "⚠️ Couldn't recognize speech clearly, but saved the audio.")
+
+            await _memory.store_message(
+                role="user",
+                content=f"[Voice message, duration: {voice.duration}s, transcription failed, saved to: {file_path}]",
+                user_id=user_id,
+                message_id=message.message_id,
+            )
+
+            voice_msg = (
+                f"The user sent a voice message ({voice.duration} seconds) but transcription failed. "
+                f"Audio saved to: {file_path}. "
+                "Let the user know you received their voice but couldn't understand it clearly, "
+                "and ask them to try again or type their message."
+            )
+
+            decision = await _brain.think(voice_msg)
+            response_text = decision.get(
+                "response",
+                "🎤 I received your voice message but couldn't understand it clearly. "
+                "Could you try again or type your message?"
+            )
+
+            await _memory.store_message(role="assistant", content=response_text)
+            await safe_reply(message, response_text)
 
     except Exception as e:
         log.error(f"Error handling voice: {e}", exc_info=True)

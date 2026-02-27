@@ -7,6 +7,7 @@ Dynamic tool execution system with expanded capabilities:
   • System info, process management
   • Clipboard, application launcher, wait/sleep
   • Python code execution sandbox
+  • Audio transcription (speech-to-text)
 """
 
 import asyncio
@@ -798,6 +799,25 @@ TOOL_DEFINITIONS = [
             "query": {
                 "type": "string",
                 "description": "What to search for in memory.",
+            },
+        },
+    },
+    {
+        "name": "transcribe_audio",
+        "description": (
+            "Transcribe an audio file to text using speech recognition. "
+            "Supports OGG, WAV, MP3, M4A, FLAC, and WebM formats. "
+            "Uses Google Web Speech API (free, no key needed). "
+            "Use this to convert voice messages, recordings, or any audio to text."
+        ),
+        "parameters": {
+            "audio_path": {
+                "type": "string",
+                "description": "Path to the audio file to transcribe.",
+            },
+            "language": {
+                "type": "string",
+                "description": "Language code for recognition (default: 'en-US'). Examples: 'fr-FR', 'ar-SA', 'es-ES', 'de-DE'.",
             },
         },
     },
@@ -2329,6 +2349,221 @@ async def set_clipboard(text: str) -> ToolResult:
         return ToolResult(success=False, stdout="", stderr=str(e), return_code=1)
 
 
+# ── Audio Transcription Tools ───────────────────────────────────────────────
+
+def _convert_audio_to_wav(input_path: str) -> str:
+    """
+    Convert any audio format (OGG, MP3, M4A, FLAC, WebM) to WAV using ffmpeg.
+    Returns the path to the WAV file.
+    """
+    wav_path = os.path.splitext(input_path)[0] + "_converted.wav"
+
+    # Try ffmpeg first
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", input_path,
+                "-ar", "16000",    # 16kHz sample rate (optimal for speech)
+                "-ac", "1",        # Mono
+                "-sample_fmt", "s16",  # 16-bit PCM
+                wav_path,
+            ],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode == 0 and os.path.exists(wav_path):
+            return wav_path
+        log.warning(f"ffmpeg conversion failed: {result.stderr[:200]}")
+    except FileNotFoundError:
+        log.warning("ffmpeg not found, trying PowerShell fallback...")
+    except Exception as e:
+        log.warning(f"ffmpeg error: {e}")
+
+    # Fallback: try PowerShell with Windows Media Foundation
+    try:
+        ps_cmd = (
+            f'$inputFile = "{input_path.replace(chr(92), chr(92)*2)}"; '
+            f'$outputFile = "{wav_path.replace(chr(92), chr(92)*2)}"; '
+            '$null = [Reflection.Assembly]::LoadWithPartialName("NAudio"); '
+            'if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { '
+            '  Write-Error "No audio converter available"; exit 1 '
+            '}'
+        )
+        # If ffmpeg isn't available, we can try python-based conversion
+        py_convert = (
+            f"import subprocess, sys; "
+            f"subprocess.run([sys.executable, '-m', 'pip', 'install', 'pydub'], "
+            f"capture_output=True); "
+            f"from pydub import AudioSegment; "
+            f"audio = AudioSegment.from_file(r'{input_path}'); "
+            f"audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2); "
+            f"audio.export(r'{wav_path}', format='wav')"
+        )
+        result = subprocess.run(
+            ["python", "-c", py_convert],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode == 0 and os.path.exists(wav_path):
+            return wav_path
+        log.warning(f"Python pydub conversion failed: {result.stderr[:200]}")
+    except Exception as e:
+        log.warning(f"Fallback conversion error: {e}")
+
+    return ""
+
+
+def _transcribe_with_speech_recognition(wav_path: str, language: str = "en-US") -> str:
+    """
+    Transcribe a WAV file using the SpeechRecognition library.
+    Uses Google Web Speech API (free, no API key needed).
+    """
+    try:
+        import speech_recognition as sr
+    except ImportError:
+        # Auto-install
+        log.info("Installing SpeechRecognition...")
+        subprocess.run(
+            ["pip", "install", "SpeechRecognition"],
+            capture_output=True, timeout=60,
+        )
+        import speech_recognition as sr
+
+    recognizer = sr.Recognizer()
+
+    # Tune for noisy Telegram voice messages
+    recognizer.energy_threshold = 300
+    recognizer.dynamic_energy_threshold = True
+
+    with sr.AudioFile(wav_path) as source:
+        recognizer.adjust_for_ambient_noise(source, duration=0.5)
+        audio_data = recognizer.record(source)
+
+    # Try Google Web Speech API (free)
+    try:
+        text = recognizer.recognize_google(audio_data, language=language)
+        return text
+    except sr.UnknownValueError:
+        log.warning("Google Speech API could not understand the audio")
+    except sr.RequestError as e:
+        log.warning(f"Google Speech API error: {e}")
+
+    return ""
+
+
+def _transcribe_powershell_fallback(wav_path: str) -> str:
+    """
+    Fallback transcription using Windows built-in System.Speech.
+    Only supports English but requires no external dependencies.
+    """
+    ps_script = f"""
+try {{
+    Add-Type -AssemblyName System.Speech
+    $recognizer = New-Object System.Speech.Recognition.SpeechRecognitionEngine
+    $recognizer.SetInputToWaveFile("{wav_path.replace(chr(92), chr(92)*2)}")
+
+    # Load default grammar
+    $grammar = New-Object System.Speech.Recognition.DictationGrammar
+    $recognizer.LoadGrammar($grammar)
+
+    $result = $recognizer.Recognize()
+    if ($result) {{
+        Write-Output $result.Text
+    }} else {{
+        Write-Error "No speech recognized"
+        exit 1
+    }}
+    $recognizer.Dispose()
+}} catch {{
+    Write-Error $_.Exception.Message
+    exit 1
+}}
+"""
+    try:
+        proc = subprocess.run(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            capture_output=True, text=True, timeout=30,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            return proc.stdout.strip()
+    except Exception as e:
+        log.warning(f"PowerShell speech recognition failed: {e}")
+
+    return ""
+
+
+async def transcribe_audio(audio_path: str, language: str = "en-US") -> ToolResult:
+    """
+    Transcribe an audio file to text.
+    Supports OGG, WAV, MP3, M4A, FLAC, WebM.
+    Uses Google Web Speech API with fallback to Windows System.Speech.
+    """
+    log.info(f"Transcribing audio: {audio_path} (language: {language})")
+
+    if not os.path.exists(audio_path):
+        return ToolResult(
+            success=False, stdout="",
+            stderr=f"Audio file not found: {audio_path}",
+            return_code=1,
+        )
+
+    loop = asyncio.get_event_loop()
+
+    # Convert to WAV if needed
+    ext = os.path.splitext(audio_path)[1].lower()
+    if ext == ".wav":
+        wav_path = audio_path
+    else:
+        wav_path = await loop.run_in_executor(None, _convert_audio_to_wav, audio_path)
+        if not wav_path:
+            return ToolResult(
+                success=False, stdout="",
+                stderr=(
+                    f"Failed to convert {ext} to WAV. "
+                    "Install ffmpeg: winget install ffmpeg / choco install ffmpeg. "
+                    "Or install pydub: pip install pydub"
+                ),
+                return_code=1,
+            )
+
+    try:
+        # Primary: SpeechRecognition + Google API
+        text = await loop.run_in_executor(
+            None, _transcribe_with_speech_recognition, wav_path, language
+        )
+
+        # Fallback: Windows System.Speech (English only)
+        if not text and language.startswith("en"):
+            log.info("Trying Windows System.Speech fallback...")
+            text = await loop.run_in_executor(
+                None, _transcribe_powershell_fallback, wav_path
+            )
+
+        if text:
+            return ToolResult(
+                success=True,
+                stdout=f"🎤 Transcription:\n{text}",
+                stderr="", return_code=0,
+            )
+        else:
+            return ToolResult(
+                success=False, stdout="",
+                stderr=(
+                    "Could not transcribe audio. Possible reasons:\n"
+                    "• Audio is too noisy or unclear\n"
+                    "• No speech detected in the recording\n"
+                    "• Language mismatch (try specifying language parameter)\n"
+                    "• Network issue (Google API requires internet)"
+                ),
+                return_code=1,
+            )
+    finally:
+        # Clean up converted file
+        if wav_path != audio_path:
+            try:
+                os.remove(wav_path)
+            except OSError:
+                pass
+
+
 # ── Utility Tools ───────────────────────────────────────────────────────────
 
 async def wait(seconds: float) -> ToolResult:
@@ -2612,6 +2847,7 @@ TOOL_MAP = {
     "wait": wait,
     "remember": remember,
     "recall": recall,
+    "transcribe_audio": transcribe_audio,
     "analyze_screen": analyze_screen,
     "click_text": click_text,
     "find_text_on_screen": find_text_on_screen,
