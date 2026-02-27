@@ -1,0 +1,72 @@
+# ══════════════════════════════════════════════════════════
+#  SharkonAI — .gitignore
+# ══════════════════════════════════════════════════════════
+
+# ── Secrets & Config ────────────────────────────────────
+config.py
+.env
+*.env
+secrets.*
+
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+*.pyz
+*.pyzw
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Virtual Environments ────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ── Database ────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Logs ────────────────────────────────────────────────
+*.log
+*.log.*
+
+# ── Media & Downloads (generated at runtime) ────────────
+sharkonai/media/
+sharkonai/downloads/
+
+# ── IDE / Editor ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# ── OS Files ────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ── Tesseract / OCR temp files ──────────────────────────
+sharkon_ocr_temp.png
+
+# ── Misc ────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
