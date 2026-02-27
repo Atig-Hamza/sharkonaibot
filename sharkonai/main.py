@@ -139,9 +139,21 @@ async def main():
 
 
 if __name__ == "__main__":
-    # Fix "Event loop is closed" error on Windows
+    # Suppress harmless "Event loop is closed" errors on Windows shutdown.
+    # We CANNOT use WindowsSelectorEventLoopPolicy because asyncio subprocess
+    # (used by execute_cmd, execute_powershell, etc.) requires ProactorEventLoop.
     if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        # Patch the ProactorEventLoop to silence the shutdown RuntimeError
+        from asyncio.proactor_events import _ProactorBasePipeTransport
+        _original_del = _ProactorBasePipeTransport.__del__
+
+        def _silenced_del(self, _warn=None):
+            try:
+                _original_del(self, _warn=_warn)
+            except RuntimeError:
+                pass
+
+        _ProactorBasePipeTransport.__del__ = _silenced_del
 
     try:
         asyncio.run(main())

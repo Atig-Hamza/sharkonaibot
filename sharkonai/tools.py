@@ -1618,12 +1618,12 @@ WINDOWS_APP_REGISTRY = {
     "character map": "charmap",
     "on-screen keyboard": "osk",
 
-    # Browsers
+    # Browsers — use multiple strategies for reliability
     "chrome": "start chrome",
     "google chrome": "start chrome",
     "firefox": "start firefox",
-    "edge": "start msedge",
-    "microsoft edge": "start msedge",
+    "edge": "start microsoft-edge:",
+    "microsoft edge": "start microsoft-edge:",
     "brave": "start brave",
     "opera": "start opera",
 
@@ -1649,6 +1649,34 @@ WINDOWS_APP_REGISTRY = {
     "7zip": "start 7zFM",
     "winrar": "start winrar",
     "git bash": "start git-bash",
+}
+
+# Known paths to search when the registry entry fails
+BROWSER_PATHS = {
+    "edge": [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+    ],
+    "microsoft edge": [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+    ],
+    "chrome": [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+    ],
+    "google chrome": [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+    ],
+    "firefox": [
+        r"C:\Program Files\Mozilla Firefox\firefox.exe",
+        r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe",
+    ],
 }
 
 
@@ -1677,6 +1705,21 @@ async def open_application(target: str) -> ToolResult:
         return ToolResult(success=True, stdout=f"✅ Opened: {target}", stderr="", return_code=0)
     except Exception:
         pass
+
+    # Try known executable paths (especially for browsers)
+    if target_lower in BROWSER_PATHS:
+        for exe_path in BROWSER_PATHS[target_lower]:
+            if os.path.exists(exe_path):
+                log.info(f"Found executable at: {exe_path}")
+                try:
+                    os.startfile(exe_path)
+                    return ToolResult(
+                        success=True,
+                        stdout=f"✅ Opened {target} from: {exe_path}",
+                        stderr="", return_code=0,
+                    )
+                except Exception as e:
+                    log.warning(f"Failed to start {exe_path}: {e}")
 
     # Try 'start' command
     result = await execute_cmd(f'start "" "{target}"')
