@@ -2490,11 +2490,14 @@ try {{
     return ""
 
 
-async def transcribe_audio(audio_path: str, language: str = "en-US") -> ToolResult:
+async def transcribe_audio(audio_path: str, language: str = "auto") -> ToolResult:
     """
     Transcribe an audio file to text.
     Supports OGG, WAV, MP3, M4A, FLAC, WebM.
-    Uses Google Web Speech API with fallback to Windows System.Speech.
+    Uses Google Web Speech API with multi-language fallback.
+    
+    language: specific language code (e.g. 'fr-FR'), or 'auto' to try
+              all configured languages in CONFIG.VOICE_LANGUAGES.
     """
     log.info(f"Transcribing audio: {audio_path} (language: {language})")
 
@@ -2525,32 +2528,66 @@ async def transcribe_audio(audio_path: str, language: str = "en-US") -> ToolResu
             )
 
     try:
-        # Primary: SpeechRecognition + Google API
-        text = await loop.run_in_executor(
-            None, _transcribe_with_speech_recognition, wav_path, language
-        )
+        # Build the list of languages to try
+        if language == "auto":
+            languages_to_try = list(CONFIG.VOICE_LANGUAGES)
+        else:
+            languages_to_try = [language]
 
-        # Fallback: Windows System.Speech (English only)
-        if not text and language.startswith("en"):
+        best_text = ""
+        best_lang = ""
+
+        for lang in languages_to_try:
+            log.info(f"Trying transcription with language: {lang}")
+            text = await loop.run_in_executor(
+                None, _transcribe_with_speech_recognition, wav_path, lang
+            )
+            if text and len(text.strip()) > 0:
+                # Basic quality check: reject if it's just repeated single words
+                # (e.g., "wait wait wait wait" = likely wrong language)
+                words = text.lower().split()
+                unique_words = set(words)
+                repetition_ratio = len(unique_words) / max(len(words), 1)
+
+                if repetition_ratio > 0.2 or len(words) <= 3:
+                    # Looks like a real transcription
+                    best_text = text
+                    best_lang = lang
+                    log.info(f"Transcription success with {lang}: {text[:80]}...")
+                    break
+                elif not best_text:
+                    # Keep as fallback (might be the best we get)
+                    best_text = text
+                    best_lang = lang
+                    log.info(f"Low-quality transcription with {lang} (repetitive), trying next...")
+
+        # If no Google result, try Windows System.Speech (English only)
+        if not best_text:
             log.info("Trying Windows System.Speech fallback...")
             text = await loop.run_in_executor(
                 None, _transcribe_powershell_fallback, wav_path
             )
+            if text:
+                best_text = text
+                best_lang = "en-US (Windows)"
 
-        if text:
+        if best_text:
+            lang_info = f" [{best_lang}]" if best_lang else ""
             return ToolResult(
                 success=True,
-                stdout=f"🎤 Transcription:\n{text}",
+                stdout=f"🎤 Transcription{lang_info}:\n{best_text}",
                 stderr="", return_code=0,
             )
         else:
+            tried = ", ".join(languages_to_try)
             return ToolResult(
                 success=False, stdout="",
                 stderr=(
-                    "Could not transcribe audio. Possible reasons:\n"
+                    f"Could not transcribe audio. Tried languages: {tried}\n"
+                    "Possible reasons:\n"
                     "• Audio is too noisy or unclear\n"
                     "• No speech detected in the recording\n"
-                    "• Language mismatch (try specifying language parameter)\n"
+                    "• Language not in the tried list\n"
                     "• Network issue (Google API requires internet)"
                 ),
                 return_code=1,

@@ -467,7 +467,7 @@ async def handle_voice(message: Message):
 
         # Transcribe the audio
         await safe_edit(status_msg, "🎤 Transcribing your voice...")
-        transcription_result = await transcribe_audio(file_path, language="en-US")
+        transcription_result = await transcribe_audio(file_path, language="auto")
 
         if transcription_result.success:
             # Extract the transcribed text

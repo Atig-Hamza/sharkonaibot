@@ -25,6 +25,7 @@ from brain import Brain
 from cognition_loop import CognitionLoop
 from watchdog import Watchdog
 from telegram_handler import init_handler, create_bot_and_dispatcher
+from tools import TOOL_MAP
 
 
 # ── Banner ──────────────────────────────────────────────────────────────────
@@ -40,8 +41,8 @@ BANNER = r"""
 ║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚══╝  ║
 ║                      A I   v 2 . 0                        ║
 ║                                                           ║
-║   🧠 Enhanced Brain • ⛓️ Multi-Step Chains • 🔧 27 Tools  ║
-║   📚 Persistent Memory • 🛡️ Self-Recovery • 🤖 Autonomous ║
+║   🧠 Enhanced Brain • ⛓️ Multi-Step Chains • 🔧 47 Tools  ║
+║   🎤 Voice Recognition • 📚 Memory • 🛡️ Self-Recovery  ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 """
@@ -103,7 +104,7 @@ async def main():
     log.info(f"  Authorized user: {CONFIG.AUTHORIZED_USER_ID}")
     log.info(f"  AI Model: {CONFIG.NVIDIA_MODEL}")
     log.info(f"  Database: {CONFIG.DATABASE_PATH}")
-    log.info(f"  Tools available: 27")
+    log.info(f"  Tools available: {len(TOOL_MAP)}")
     log.info(f"  Max chain depth: {CONFIG.MAX_CHAIN_STEPS}")
     log.info("=" * 60)
 
@@ -138,6 +139,10 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Fix "Event loop is closed" error on Windows
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

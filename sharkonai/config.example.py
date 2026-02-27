@@ -56,6 +56,16 @@ class Config:
     MAX_TASK_HISTORY: int = 50   # Max tasks to keep in history
     SUMMARY_INTERVAL: int = 20  # Summarize conversation every N messages
 
+    # ── Voice Recognition ───────────────────────────────────────────────────
+    # Languages to try for speech-to-text, in priority order.
+    # The system tries each language until one produces a good transcription.
+    # Common codes: 'fr-FR', 'en-US', 'ar-SA', 'es-ES', 'de-DE', 'zh-CN', 'ja-JP'
+    VOICE_LANGUAGES: list = None  # Will be set in __post_init__
+
+    def __post_init__(self):
+        if self.VOICE_LANGUAGES is None:
+            self.VOICE_LANGUAGES = ["fr-FR", "en-US", "ar-SA"]
+
     # ── Media / File Storage ────────────────────────────────────────────────
     # All generated files go here, not in the project root
     MEDIA_DIR: str = os.path.join(os.path.dirname(__file__), "media")
