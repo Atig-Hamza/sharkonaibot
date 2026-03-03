@@ -20,7 +20,7 @@ from config import CONFIG
 from logger import log
 from memory import Memory
 from brain import Brain
-from tools import dispatch_tool, transcribe_audio
+from tools import dispatch_tool, transcribe_audio, ToolResult
 
 # ── Setup ───────────────────────────────────────────────────────────────────
 
@@ -208,6 +208,7 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
     final_response = decision.get("response", "")
 
     consecutive_failures = 0  # Track consecutive failures for smart retry
+    _call_counts: dict[str, int] = {}  # Track duplicate calls: "action|params" → count
 
     while step < CONFIG.MAX_CHAIN_STEPS:
         action = decision.get("action", "none")
@@ -228,28 +229,49 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
             except Exception:
                 pass
 
-            # Execute the tool with a concurrent typing indicator so the user
-            # knows the bot is alive during long-running tools.
-            async def _keep_typing():
-                """Send typing action every 5s while tool runs."""
-                try:
-                    while True:
-                        await asyncio.sleep(5)
-                        await message.bot.send_chat_action(
-                            chat_id=message.chat.id, action="typing"
-                        )
-                except asyncio.CancelledError:
-                    pass
-
-            typing_task = asyncio.create_task(_keep_typing())
+            # ── Duplicate-call guard ────────────────────────────────
+            import json as _json
             try:
-                tool_result = await dispatch_tool(action, parameters)
-            finally:
-                typing_task.cancel()
+                call_key = f"{action}|{_json.dumps(parameters, sort_keys=True, default=str)}"
+            except Exception:
+                call_key = f"{action}|{parameters}"
+            _call_counts[call_key] = _call_counts.get(call_key, 0) + 1
+
+            if _call_counts[call_key] > 2:
+                # Block 3rd+ identical call — prevents wasting steps
+                log.warning(f"Blocked duplicate call #{_call_counts[call_key]}: {action}")
+                tool_result = ToolResult(
+                    success=False, stdout="",
+                    stderr=(
+                        f"BLOCKED: You already called '{action}' with these exact parameters "
+                        f"{_call_counts[call_key] - 1} times and it failed each time. "
+                        "Do NOT retry the same call. Try a COMPLETELY DIFFERENT approach, "
+                        "a different tool, or different parameters."
+                    ),
+                )
+            else:
+                # Execute the tool with a concurrent typing indicator so the user
+                # knows the bot is alive during long-running tools.
+                async def _keep_typing():
+                    """Send typing action every 5s while tool runs."""
+                    try:
+                        while True:
+                            await asyncio.sleep(5)
+                            await message.bot.send_chat_action(
+                                chat_id=message.chat.id, action="typing"
+                            )
+                    except asyncio.CancelledError:
+                        pass
+
+                typing_task = asyncio.create_task(_keep_typing())
                 try:
-                    await typing_task
-                except asyncio.CancelledError:
-                    pass
+                    tool_result = await dispatch_tool(action, parameters)
+                finally:
+                    typing_task.cancel()
+                    try:
+                        await typing_task
+                    except asyncio.CancelledError:
+                        pass
 
             # Track in chain context
             chain_context.append({

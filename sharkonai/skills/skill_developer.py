@@ -101,6 +101,10 @@ from skills.system_commands import ToolResult  # ALWAYS use this ToolResult — 
 # Use: return ToolResult(success=True, stdout="output text")
 # NEVER: return {{"success": True, "stdout": "..."}}
 #
+# Function signatures MUST use **keyword arguments** matching the parameter names:
+#   CORRECT:  async def scrape_emails(url: str) -> ToolResult:
+#   WRONG:    async def scrape_emails(params) -> ToolResult:  # DO NOT use a single params dict!
+#
 # For HTTP requests, use urllib.request (already in stdlib) or wrap blocking
 # calls with: await asyncio.to_thread(requests.get, url, timeout=10)
 # NEVER call requests.get() directly in an async function — it freezes the bot.
@@ -171,7 +175,9 @@ SKILL_DEFINITIONS = [
                 "type": "string",
                 "description": (
                     "The Python source code implementing the tool functions. "
-                    "Each function MUST be: async def tool_name(params...) -> ToolResult. "
+                    "Each function MUST use keyword arguments matching parameter names in tool_definitions. "
+                    "CORRECT: async def scrape(url: str, depth: int = 1) -> ToolResult: ... "
+                    "WRONG:   async def scrape(params) -> ToolResult: url = params['url']  # NEVER do this! "
                     "MUST return ToolResult(success=True/False, stdout='output', stderr='error'). "
                     "NEVER return a plain dict like {'success':True,...} — always use ToolResult(). "
                     "Do NOT define or import ToolResult yourself — it is auto-provided by the template. "

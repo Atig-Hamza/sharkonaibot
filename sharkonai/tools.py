@@ -51,9 +51,26 @@ from skills.audio_transcription import transcribe_audio
 
 
 def _coerce_tool_result(raw) -> ToolResult:
-    """Ensure the return value is a proper ToolResult (AI skills sometimes return dicts)."""
+    """Ensure the return value is a proper ToolResult (AI skills sometimes return dicts).
+
+    Skills import ToolResult from skills.system_commands, which is a *different*
+    class than the one defined in this file.  A plain ``isinstance`` check would
+    miss them, so we use duck-typing first: any object with `success` + `stdout`
+    attributes is treated as a ToolResult-like object and converted.
+    """
     if isinstance(raw, ToolResult):
         return raw
+    # Duck-type: any dataclass / namedtuple with the right attrs (covers
+    # skills.system_commands.ToolResult without importing it).
+    if hasattr(raw, "success") and hasattr(raw, "stdout"):
+        return ToolResult(
+            success=raw.success,
+            stdout=raw.stdout,
+            stderr=getattr(raw, "stderr", ""),
+            return_code=getattr(raw, "return_code", 0),
+            image_path=getattr(raw, "image_path", ""),
+            file_path=getattr(raw, "file_path", ""),
+        )
     if isinstance(raw, dict):
         return ToolResult(
             success=raw.get("success", False),
@@ -80,12 +97,26 @@ async def dispatch_tool(action: str, parameters: dict) -> ToolResult:
     try:
         # Filter out None-valued params (AI sometimes sends null for optional args)
         clean_params = {k: v for k, v in parameters.items() if v is not None}
-        # Execute with timeout to prevent runaway tools from freezing the bot
         from config import CONFIG
-        result = await asyncio.wait_for(
-            func(**clean_params),
-            timeout=CONFIG.TOOL_TIMEOUT,
-        )
+
+        # Try keyword-argument dispatch first (built-in skill style).
+        # If that fails with TypeError, fall back to passing the whole dict
+        # as a single positional arg (AI-generated skill style: def tool(params)).
+        try:
+            result = await asyncio.wait_for(
+                func(**clean_params),
+                timeout=CONFIG.TOOL_TIMEOUT,
+            )
+        except TypeError as e:
+            if "unexpected keyword argument" in str(e) or "positional argument" in str(e):
+                log.debug(f"Retrying {action} with single-dict param pattern")
+                result = await asyncio.wait_for(
+                    func(clean_params),
+                    timeout=CONFIG.TOOL_TIMEOUT,
+                )
+            else:
+                raise
+
         return _coerce_tool_result(result)
     except asyncio.TimeoutError:
         return ToolResult(
