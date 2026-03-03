@@ -23,6 +23,42 @@ from logger import log
 from skills.system_commands import ToolResult
 
 
+# ── Memory Reference (injected at startup) ──────────────────────────────────
+_memory_ref = None
+
+
+def SKILL_SETUP(memory):
+    """Called by the skill loader to inject the memory reference."""
+    global _memory_ref
+    _memory_ref = memory
+
+
+async def _store_skill_knowledge(action: str, filename: str, skill_name: str,
+                                  tool_names: list, description: str = ""):
+    """Persist skill metadata to the knowledge base so the AI remembers its skills."""
+    if not _memory_ref:
+        return
+    try:
+        if action in ("created", "updated"):
+            await _memory_ref.store_knowledge(
+                category="ai_skills",
+                key=filename,
+                value=f"{skill_name} | tools: {', '.join(tool_names)} | {description}",
+                confidence=1.0,
+                source=f"skill_{action}",
+            )
+        elif action == "deleted":
+            await _memory_ref.store_knowledge(
+                category="ai_skills",
+                key=filename,
+                value=f"[DELETED] was: {skill_name}",
+                confidence=0.0,
+                source="skill_deleted",
+            )
+    except Exception as e:
+        log.debug(f"Failed to persist skill knowledge: {e}")
+
+
 # ── Constants ───────────────────────────────────────────────────────────────
 
 _skills_dir = os.path.dirname(os.path.abspath(__file__))
@@ -339,6 +375,8 @@ async def develop_skill(skill_name: str, filename: str, description: str,
         if success:
             tool_names = list(tool_map_dict.keys())
             log.info(f"✅ Skill '{skill_name}' created and loaded! Tools: {tool_names}")
+            # Persist skill metadata to knowledge base
+            await _store_skill_knowledge("created", safe_filename, skill_name, tool_names, description)
             return ToolResult(
                 success=True,
                 stdout=(
@@ -484,6 +522,8 @@ async def update_skill(filename: str, skill_name: str, description: str,
             except OSError:
                 pass
             tool_names = list(tool_map_dict.keys())
+            # Persist updated skill metadata
+            await _store_skill_knowledge("updated", safe_filename, skill_name, tool_names, description)
             return ToolResult(
                 success=True,
                 stdout=f"✅ Skill '{skill_name}' updated and reloaded! Tools: {', '.join(tool_names)}",
@@ -560,6 +600,9 @@ async def delete_skill(filename: str) -> ToolResult:
         backup_path = filepath + ".bak"
         if os.path.exists(backup_path):
             os.remove(backup_path)
+
+        # Persist deletion to knowledge
+        await _store_skill_knowledge("deleted", filename, filename[:-3], removed_tools)
 
         return ToolResult(
             success=True,

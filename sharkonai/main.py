@@ -39,10 +39,10 @@ BANNER = r"""
 ║   ╚════██║██╔══██║██╔══██║██╔══██╗██╔═██╗ ██║   ██║████║  ║
 ║   ███████║██║  ██║██║  ██║██║  ██║██║  ██╗╚██████╔╝╚███║  ║
 ║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚══╝  ║
-║                      A I   v 2 . 0                        ║
+║                      A I   v 3 . 0                        ║
 ║                                                           ║
-║   🧠 Enhanced Brain • ⛓️ Multi-Step Chains • 🔧 47 Tools  ║
-║   🎤 Voice Recognition • 📚 Memory • 🛡️ Self-Recovery  ║
+║   🧠 Enhanced Brain • ⛓️ 25-Step Chains • 🔧 51+ Tools   ║
+║   🧬 Self-Evolving • 📚 Memory • 🛡️ Self-Recovery       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 """
@@ -52,7 +52,7 @@ async def main():
     """Initialize and run all SharkonAI subsystems."""
     print(BANNER)
     log.info("=" * 60)
-    log.info("SharkonAI v2.0 starting up...")
+    log.info("SharkonAI v3.0 starting up...")
     log.info("=" * 60)
 
     # ── 1. Memory System ──
@@ -82,6 +82,7 @@ async def main():
     # ── 3. Cognition Loop ──
     log.info("[3/5] Starting Cognition Loop...")
     cognition = CognitionLoop(memory)
+    cognition.set_brain(brain)  # Enable autonomous skill evolution
     await cognition.start()
 
     # ── 4. Watchdog ──
@@ -96,16 +97,17 @@ async def main():
 
     # Store startup state
     await memory.set_state("status", "running")
-    await memory.set_state("version", "2.0")
+    await memory.set_state("version", "3.0")
     await memory.set_state("startup_time", __import__("datetime").datetime.utcnow().isoformat())
 
     log.info("=" * 60)
-    log.info("🚀 SharkonAI v2.0 is ONLINE and ready!")
+    log.info("🚀 SharkonAI v3.0 is ONLINE and ready!")
     log.info(f"  Authorized user: {CONFIG.AUTHORIZED_USER_ID}")
     log.info(f"  AI Model: {CONFIG.NVIDIA_MODEL}")
     log.info(f"  Database: {CONFIG.DATABASE_PATH}")
     log.info(f"  Tools available: {len(TOOL_MAP)}")
     log.info(f"  Max chain depth: {CONFIG.MAX_CHAIN_STEPS}")
+    log.info(f"  Skill evolution: {'enabled' if CONFIG.SKILL_EVOLUTION_ENABLED else 'disabled'}")
     log.info("=" * 60)
 
     # Graceful shutdown handler

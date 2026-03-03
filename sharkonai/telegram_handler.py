@@ -183,6 +183,8 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
     status_msg = None
     final_response = decision.get("response", "")
 
+    consecutive_failures = 0  # Track consecutive failures for smart retry
+
     while step < CONFIG.MAX_CHAIN_STEPS:
         action = decision.get("action", "none")
         parameters = decision.get("parameters", {})
@@ -190,9 +192,9 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
 
         if action and action != "none":
             step += 1
-            log.info(f"Chain step {step}: {action} with params: {parameters}")
+            log.info(f"Chain step {step}/{CONFIG.MAX_CHAIN_STEPS}: {action} with params: {parameters}")
 
-            # Send or update status message
+            # Send or update status message with better tracking
             status_text = f"🔧 Step {step}: Executing {action}..."
             try:
                 if status_msg:
@@ -214,6 +216,13 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
                 "output": (tool_result.stdout or tool_result.stderr)[:500],
             })
 
+            # Track consecutive failures
+            if not tool_result.success:
+                consecutive_failures += 1
+                log.warning(f"Step {step} failed ({consecutive_failures} consecutive failures)")
+            else:
+                consecutive_failures = 0
+
             # Store action in memory
             await _memory.store_action(
                 action_type=action,
@@ -234,6 +243,10 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
                 caption = decision.get("response", "")
                 await send_file_to_chat(message, tool_result.file_path, caption)
 
+            # Inject step metadata for the brain's process_tool_result
+            decision["_step_number"] = step
+            decision["_total_planned_steps"] = CONFIG.MAX_CHAIN_STEPS
+
             # Get AI's analysis of the result (and possible next step)
             follow_decision = await _brain.process_tool_result(decision, tool_result)
 
@@ -243,10 +256,24 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
             next_action = follow_decision.get("action", "none")
             next_continue = follow_decision.get("continue", False)
 
-            if next_action and next_action != "none" and (next_continue or should_continue):
+            # Smarter continuation logic:
+            # 1. If AI says continue and has an action → continue
+            # 2. If a step failed and we haven't hit 5 consecutive failures → force continue
+            #    (the AI might say continue=false prematurely on failure)
+            # 3. If AI set continue=true in the original decision → honor that even if
+            #    the follow-up forgets
+            force_continue = (
+                not tool_result.success
+                and consecutive_failures < 5
+                and next_action and next_action != "none"
+            )
+
+            if next_action and next_action != "none" and (next_continue or should_continue or force_continue):
                 # AI wants to execute another tool — loop again
                 decision = follow_decision
                 decision["_original_message"] = user_text
+                if force_continue and not next_continue:
+                    log.info(f"Force-continuing after failure (attempt {consecutive_failures})")
                 continue
             else:
                 # Done — we have the final response
@@ -254,6 +281,14 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
         else:
             # No tool action — just a conversational response
             break
+
+    # Log chain completion stats
+    if chain_context:
+        success_count = sum(1 for s in chain_context if s["success"])
+        log.info(
+            f"Tool chain completed: {len(chain_context)} steps, "
+            f"{success_count} succeeded, {len(chain_context) - success_count} failed"
+        )
 
     # Clean up status message
     if status_msg:

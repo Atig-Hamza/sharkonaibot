@@ -187,5 +187,45 @@ def get_tools_prompt() -> str:
     return "\n".join(lines)
 
 
+def get_skill_summary() -> str:
+    """
+    Return a compact summary of all loaded skills and their tools.
+    Used by the brain to maintain awareness of current capabilities.
+    """
+    lines = []
+    skill_files = sorted(f for f in os.listdir(_skills_dir)
+                         if f.endswith(".py") and f != "__init__.py")
+
+    builtin = set()
+    custom = set()
+
+    for filename in skill_files:
+        module_name = f"skills.{filename[:-3]}"
+        if module_name not in _loaded_modules:
+            continue
+        mod = _loaded_modules[module_name]
+        smap = getattr(mod, "SKILL_MAP", {})
+        tool_names = list(smap.keys())
+        if not tool_names:
+            continue
+
+        # Detect if AI-generated (has "Author: SharkonAI" in docstring)
+        doc = getattr(mod, "__doc__", "") or ""
+        is_custom = "SharkonAI (auto-generated" in doc or "Author: SharkonAI" in doc
+
+        if is_custom:
+            desc_line = doc.strip().split("\n")[0].strip() if doc.strip() else filename
+            custom.add(filename)
+            lines.append(f"  [AI-created] {filename}: {', '.join(tool_names)} — {desc_line}")
+        else:
+            builtin.add(filename)
+
+    summary = f"Skills loaded: {len(builtin)} built-in, {len(custom)} AI-created. "
+    summary += f"Total tools: {len(TOOL_MAP)}."
+    if lines:
+        summary += "\nAI-created skills:\n" + "\n".join(lines)
+    return summary
+
+
 # ── Auto-load on import ────────────────────────────────────────────────────
 load_all_skills()
