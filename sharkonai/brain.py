@@ -182,6 +182,35 @@ When automating the desktop:
   • For typing into applications: first open/focus the app, then use type_text.
   • Chain operations: open_application → wait → type_text → press_key
 
+⚡ KEYBOARD SHORTCUTS FIRST — ALWAYS prefer hotkey() over clicking whenever possible:
+  Keyboard shortcuts are INSTANT and never miss. Clicking requires OCR, coordinate
+  math, and can fail if the UI shifts. Use hotkey() for any action that has a shortcut:
+
+  COMMON SHORTCUTS (use hotkey with these):
+    Navigation & Tabs:
+      • New tab: hotkey(["ctrl","t"])          • Close tab: hotkey(["ctrl","w"])
+      • Switch tab: hotkey(["ctrl","tab"])     • Address bar: hotkey(["ctrl","l"]) or press_key("f6")
+      • Back: hotkey(["alt","left"])           • Forward: hotkey(["alt","right"])
+      • Refresh: press_key("f5")              • Full screen: press_key("f11")
+    Text & Editing:
+      • Copy: hotkey(["ctrl","c"])             • Paste: hotkey(["ctrl","v"])
+      • Cut: hotkey(["ctrl","x"])              • Undo: hotkey(["ctrl","z"])
+      • Select all: hotkey(["ctrl","a"])        • Find: hotkey(["ctrl","f"])
+      • Save: hotkey(["ctrl","s"])             • Save as: hotkey(["ctrl","shift","s"])
+    Windows & Apps:
+      • Switch app: hotkey(["alt","tab"])       • Close window: hotkey(["alt","f4"])
+      • Minimize: hotkey(["win","down"])        • Maximize: hotkey(["win","up"])
+      • Lock screen: hotkey(["win","l"])        • File Explorer: hotkey(["win","e"])
+      • Run dialog: hotkey(["win","r"])         • Task Manager: hotkey(["ctrl","shift","esc"])
+      • Desktop: hotkey(["win","d"])            • Settings: hotkey(["win","i"])
+    Dev Tools:
+      • DevTools: press_key("f12")             • Console: hotkey(["ctrl","shift","j"])
+      • Inspect: hotkey(["ctrl","shift","c"])
+
+  RULE: Before doing click_text("New Tab") → use hotkey(["ctrl","t"]) instead.
+        Before click_text on a menu item → check if there's a keyboard shortcut.
+        Only fall back to clicking when NO shortcut exists (e.g. clicking a specific link).
+
 SCREEN VISION — How to interact with web pages and GUIs:
   You have OCR-powered screen vision. Follow this workflow for any GUI task:
 
@@ -190,17 +219,19 @@ SCREEN VISION — How to interact with web pages and GUIs:
 
   2. LOCATE: Use find_text_on_screen to find specific elements if needed.
 
-  3. ACT: Use click_text to click on buttons, links, or menu items BY NAME.
+  3. ACT: First check if a keyboard shortcut can do the job (see list above).
+     If not, use click_text to click on buttons, links, or menu items BY NAME.
      Example: click_text("Sign In"), click_text("Submit"), click_text("New Tab").
      This is MUCH MORE RELIABLE than guessing pixel coordinates with mouse_click.
 
   4. VERIFY: Use analyze_screen again to confirm the action worked.
 
   IMPORTANT:
-  • ALWAYS prefer click_text over mouse_click — it finds and clicks elements by name.
+  • ALWAYS prefer keyboard shortcuts → then click_text → then mouse_click (last resort).
   • Use analyze_screen BEFORE any click to understand the UI layout.
   • Use get_active_window to know which app is currently focused.
-  • For web browsing: analyze_screen → click_text on links/buttons → type_text for inputs.
+  • For web browsing: hotkey(["ctrl","l"]) to focus address bar → type_text URL → press_key("enter").
+    This is FASTER than clicking the address bar.
 
 HIGH-PRECISION GUI TOOLS — For advanced interactions:
   You have pixel-perfect tools for every type of GUI interaction:
