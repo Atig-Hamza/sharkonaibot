@@ -266,20 +266,35 @@ def _validate_filename(filename: str) -> str:
 
 
 def _parse_json_string(s: str) -> object:
-    """Parse a JSON string, handling various formats."""
+    """Parse a JSON string, handling various AI-generated formats."""
     import json
     s = s.strip()
     # Remove markdown code fences if present
     if s.startswith("```"):
         s = re.sub(r'^```(?:json)?\s*', '', s)
         s = re.sub(r'\s*```$', '', s)
+    # Strip stray surrounding quotes the AI sometimes adds
+    s = s.strip()
+    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+        inner = s[1:-1]
+        if inner.lstrip().startswith('[') or inner.lstrip().startswith('{'):
+            s = inner
+    # Remove trailing stray quote after valid JSON bracket
+    s = re.sub(r'([\]\}])\s*["\']\s*$', r'\1', s)
+    # Remove leading stray quote before valid JSON bracket
+    s = re.sub(r'^\s*["\']\s*([\[\{])', r'\1', s)
     try:
         return json.loads(s)
     except json.JSONDecodeError:
-        # Try fixing common issues
+        # Try fixing common issues: trailing commas
         fixed = re.sub(r",\s*}", "}", s)
         fixed = re.sub(r",\s*]", "]", fixed)
-        return json.loads(fixed)
+        try:
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            # Last resort: try ast.literal_eval for Python-dict-style output
+            import ast
+            return ast.literal_eval(s)
 
 
 def _build_skill_file(skill_name: str, description: str, definitions, code: str, tool_map_dict: dict) -> str:

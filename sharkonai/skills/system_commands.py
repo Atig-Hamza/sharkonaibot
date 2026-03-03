@@ -20,8 +20,8 @@ from typing import Optional
 class ToolResult:
     success: bool
     stdout: str
-    stderr: str
-    return_code: int
+    stderr: str = ""
+    return_code: int = 0
     image_path: str = ""
     file_path: str = ""
 

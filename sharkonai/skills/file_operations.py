@@ -213,10 +213,29 @@ async def read_file_tool(path: str, start_line: int = None, end_line: int = None
         return ToolResult(success=False, stdout="", stderr=str(e), return_code=1)
 
 
+# Directories where write_file is blocked (use develop_skill for skills)
+_BLOCKED_WRITE_DIRS = {
+    os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)))),              # skills/
+    os.path.normpath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "skills_by_Sharkon")),  # skills_by_Sharkon/
+}
+
+
 async def write_file_tool(path: str, content: str) -> ToolResult:
     """Write content to a file."""
     log.info(f"Writing file: {path}")
     try:
+        abs_path = os.path.abspath(path)
+        # Block writing into protected skill directories
+        for blocked in _BLOCKED_WRITE_DIRS:
+            if os.path.normpath(os.path.dirname(abs_path)) == blocked:
+                return ToolResult(
+                    success=False, stdout="",
+                    stderr=(
+                        f"Cannot write directly to '{os.path.basename(os.path.dirname(abs_path))}/'. "
+                        "Use the develop_skill tool to create or update_skill to modify skills."
+                    ),
+                    return_code=1,
+                )
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
