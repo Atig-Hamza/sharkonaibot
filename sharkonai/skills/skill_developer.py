@@ -97,6 +97,14 @@ import os
 from logger import log
 from skills.system_commands import ToolResult  # ALWAYS use this ToolResult — never redefine it
 
+# IMPORTANT FOR AI: Every tool function MUST return ToolResult(...), NOT a plain dict.
+# Use: return ToolResult(success=True, stdout="output text")
+# NEVER: return {{"success": True, "stdout": "..."}}
+#
+# For HTTP requests, use urllib.request (already in stdlib) or wrap blocking
+# calls with: await asyncio.to_thread(requests.get, url, timeout=10)
+# NEVER call requests.get() directly in an async function — it freezes the bot.
+
 
 # ── Tool Definitions ────────────────────────────────────────────────────────
 
@@ -164,8 +172,12 @@ SKILL_DEFINITIONS = [
                 "description": (
                     "The Python source code implementing the tool functions. "
                     "Each function MUST be: async def tool_name(params...) -> ToolResult. "
-                    "Use ToolResult(success=True/False, stdout='output', stderr='error', return_code=0/1). "
+                    "MUST return ToolResult(success=True/False, stdout='output', stderr='error'). "
+                    "NEVER return a plain dict like {'success':True,...} — always use ToolResult(). "
                     "Do NOT define or import ToolResult yourself — it is auto-provided by the template. "
+                    "NEVER call blocking HTTP libraries (requests.get) directly in async functions — "
+                    "use urllib.request with asyncio.to_thread(), or keep requests small and fast. "
+                    "Each tool MUST complete within 120 seconds or it will be killed. "
                     "You can import any standard library module. For 3rd party packages, install them "
                     "first inside your code: subprocess.run(['pip', 'install', 'package_name']). "
                     "Include proper error handling with try/except."

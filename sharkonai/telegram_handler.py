@@ -228,8 +228,28 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
             except Exception:
                 pass
 
-            # Execute the tool
-            tool_result = await dispatch_tool(action, parameters)
+            # Execute the tool with a concurrent typing indicator so the user
+            # knows the bot is alive during long-running tools.
+            async def _keep_typing():
+                """Send typing action every 5s while tool runs."""
+                try:
+                    while True:
+                        await asyncio.sleep(5)
+                        await message.bot.send_chat_action(
+                            chat_id=message.chat.id, action="typing"
+                        )
+                except asyncio.CancelledError:
+                    pass
+
+            typing_task = asyncio.create_task(_keep_typing())
+            try:
+                tool_result = await dispatch_tool(action, parameters)
+            finally:
+                typing_task.cancel()
+                try:
+                    await typing_task
+                except asyncio.CancelledError:
+                    pass
 
             # Track in chain context
             chain_context.append({

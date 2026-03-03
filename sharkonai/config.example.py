@@ -37,6 +37,7 @@ class Config:
 
     # Tool Execution
     CMD_TIMEOUT: int = 180  # seconds timeout for command execution (increased)
+    TOOL_TIMEOUT: int = 120
 
     # Brain - Enhanced Reasoning
     MAX_CHAIN_STEPS: int = 25        # Max auto-continuation steps for multi-step tasks
