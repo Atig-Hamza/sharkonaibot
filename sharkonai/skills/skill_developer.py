@@ -61,7 +61,11 @@ async def _store_skill_knowledge(action: str, filename: str, skill_name: str,
 
 # ── Constants ───────────────────────────────────────────────────────────────
 
-_skills_dir = os.path.dirname(os.path.abspath(__file__))
+_builtin_skills_dir = os.path.dirname(os.path.abspath(__file__))
+_ai_skills_dir = os.path.join(os.path.dirname(_builtin_skills_dir), "skills_by_Sharkon")
+
+# Ensure AI skills directory exists
+os.makedirs(_ai_skills_dir, exist_ok=True)
 
 # Built-in skills that cannot be modified or deleted by the AI
 PROTECTED_SKILLS = {
@@ -91,7 +95,7 @@ import asyncio
 import os
 
 from logger import log
-from skills.system_commands import ToolResult
+from skills.system_commands import ToolResult  # ALWAYS use this ToolResult — never redefine it
 
 
 # ── Tool Definitions ────────────────────────────────────────────────────────
@@ -161,6 +165,7 @@ SKILL_DEFINITIONS = [
                     "The Python source code implementing the tool functions. "
                     "Each function MUST be: async def tool_name(params...) -> ToolResult. "
                     "Use ToolResult(success=True/False, stdout='output', stderr='error', return_code=0/1). "
+                    "Do NOT define or import ToolResult yourself — it is auto-provided by the template. "
                     "You can import any standard library module. For 3rd party packages, install them "
                     "first inside your code: subprocess.run(['pip', 'install', 'package_name']). "
                     "Include proper error handling with try/except."
@@ -325,7 +330,7 @@ async def develop_skill(skill_name: str, filename: str, description: str,
             return_code=1,
         )
 
-    filepath = os.path.join(_skills_dir, safe_filename)
+    filepath = os.path.join(_ai_skills_dir, safe_filename)
 
     # Check if file already exists (use update_skill instead)
     if os.path.exists(filepath):
@@ -370,7 +375,7 @@ async def develop_skill(skill_name: str, filename: str, description: str,
 
         # Hot-load the skill
         from skills import load_single_skill
-        success = load_single_skill(safe_filename)
+        success = load_single_skill(safe_filename, ai_created=True)
 
         if success:
             tool_names = list(tool_map_dict.keys())
@@ -381,7 +386,7 @@ async def develop_skill(skill_name: str, filename: str, description: str,
                 success=True,
                 stdout=(
                     f"✅ New skill '{skill_name}' created successfully!\n"
-                    f"📁 File: skills/{safe_filename}\n"
+                    f"📁 File: skills_by_Sharkon/{safe_filename}\n"
                     f"🔧 New tools available: {', '.join(tool_names)}\n"
                     f"The skill is loaded and ready to use immediately."
                 ),
@@ -423,17 +428,17 @@ async def list_skills() -> ToolResult:
 
         lines = ["═══ SharkonAI Skills Registry ═══\n"]
 
-        skill_files = sorted(f for f in os.listdir(_skills_dir)
-                             if f.endswith(".py") and f != "__init__.py")
+        # Built-in skills
+        lines.append("── Built-in Skills (skills/) ──")
+        builtin_files = sorted(f for f in os.listdir(_builtin_skills_dir)
+                              if f.endswith(".py") and f != "__init__.py")
 
-        for filename in skill_files:
+        for filename in builtin_files:
             module_name = f"skills.{filename[:-3]}"
             is_loaded = module_name in _loaded_modules
-            is_protected = filename in PROTECTED_SKILLS
             status = "🟢" if is_loaded else "🔴"
-            badge = " [built-in]" if is_protected else " [AI-generated]"
 
-            lines.append(f"{status} {filename}{badge}")
+            lines.append(f"{status} {filename} [built-in]")
 
             if is_loaded:
                 mod = _loaded_modules[module_name]
@@ -441,16 +446,44 @@ async def list_skills() -> ToolResult:
                 if smap:
                     for tool_name in smap:
                         lines.append(f"    • {tool_name}")
-                # Show description from docstring
                 doc = getattr(mod, "__doc__", "")
                 if doc:
                     first_line = doc.strip().split("\n")[0].strip()
                     if first_line:
                         lines.append(f"    📝 {first_line}")
-
             lines.append("")
 
-        lines.append(f"Total: {len(skill_files)} skill files, {len(all_tools)} tools loaded.")
+        # AI-generated skills
+        lines.append("── AI-Created Skills (skills_by_Sharkon/) ──")
+        ai_files = []
+        if os.path.isdir(_ai_skills_dir):
+            ai_files = sorted(f for f in os.listdir(_ai_skills_dir)
+                             if f.endswith(".py") and f != "__init__.py")
+
+        if not ai_files:
+            lines.append("  (none yet — use develop_skill to create one!)")
+        else:
+            for filename in ai_files:
+                module_name = f"skills_by_Sharkon.{filename[:-3]}"
+                is_loaded = module_name in _loaded_modules
+                status = "🟢" if is_loaded else "🔴"
+
+                lines.append(f"{status} {filename} [AI-generated]")
+
+                if is_loaded:
+                    mod = _loaded_modules[module_name]
+                    smap = getattr(mod, "SKILL_MAP", {})
+                    if smap:
+                        for tool_name in smap:
+                            lines.append(f"    • {tool_name}")
+                    doc = getattr(mod, "__doc__", "")
+                    if doc:
+                        first_line = doc.strip().split("\n")[0].strip()
+                        if first_line:
+                            lines.append(f"    📝 {first_line}")
+                lines.append("")
+
+        lines.append(f"Total: {len(builtin_files) + len(ai_files)} skill files, {len(all_tools)} tools loaded.")
 
         return ToolResult(success=True, stdout="\n".join(lines), stderr="", return_code=0)
     except Exception as e:
@@ -463,7 +496,10 @@ async def read_skill(filename: str) -> ToolResult:
     log.info(f"Reading skill: {filename}")
     if not filename.endswith(".py"):
         filename += ".py"
-    filepath = os.path.join(_skills_dir, filename)
+    # Check AI skills dir first, then built-in
+    filepath = os.path.join(_ai_skills_dir, filename)
+    if not os.path.exists(filepath):
+        filepath = os.path.join(_builtin_skills_dir, filename)
     if not os.path.exists(filepath):
         return ToolResult(success=False, stdout="", stderr=f"Skill '{filename}' not found.", return_code=1)
     try:
@@ -490,9 +526,9 @@ async def update_skill(filename: str, skill_name: str, description: str,
             return_code=1,
         )
 
-    filepath = os.path.join(_skills_dir, safe_filename)
+    filepath = os.path.join(_ai_skills_dir, safe_filename)
     if not os.path.exists(filepath):
-        return ToolResult(success=False, stdout="", stderr=f"Skill '{safe_filename}' not found. Use develop_skill to create it.", return_code=1)
+        return ToolResult(success=False, stdout="", stderr=f"Skill '{safe_filename}' not found in skills_by_Sharkon/. Use develop_skill to create it.", return_code=1)
 
     # Backup the current version
     backup_path = filepath + ".bak"
@@ -513,7 +549,7 @@ async def update_skill(filename: str, skill_name: str, description: str,
             f.write(file_content)
 
         from skills import load_single_skill
-        success = load_single_skill(safe_filename)
+        success = load_single_skill(safe_filename, ai_created=True)
 
         if success:
             # Clean up backup
@@ -567,16 +603,16 @@ async def delete_skill(filename: str) -> ToolResult:
     if filename in PROTECTED_SKILLS:
         return ToolResult(success=False, stdout="", stderr=f"Cannot delete protected built-in skill '{filename}'.", return_code=1)
 
-    filepath = os.path.join(_skills_dir, filename)
+    filepath = os.path.join(_ai_skills_dir, filename)
     if not os.path.exists(filepath):
-        return ToolResult(success=False, stdout="", stderr=f"Skill '{filename}' not found.", return_code=1)
+        return ToolResult(success=False, stdout="", stderr=f"Skill '{filename}' not found in skills_by_Sharkon/. Only AI-generated skills can be deleted.", return_code=1)
 
     try:
         # Unregister tools from the global registry
         from skills import TOOL_DEFINITIONS as all_defs, TOOL_MAP as all_tools, _loaded_modules
         import sys
 
-        module_name = f"skills.{filename[:-3]}"
+        module_name = f"skills_by_Sharkon.{filename[:-3]}"
         if module_name in _loaded_modules:
             mod = _loaded_modules[module_name]
             old_map = getattr(mod, "SKILL_MAP", {})

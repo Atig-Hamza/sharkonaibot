@@ -66,6 +66,9 @@ ehthumbs.db
 # ── Tesseract / OCR temp files ──────────────────────────
 sharkon_ocr_temp.png
 
+# ── AI-Generated Skills (created at runtime) ───────────
+sharkonai/skills_by_Sharkon/
+
 # ── Misc ────────────────────────────────────────────────
 *.bak
 *.tmp

@@ -234,14 +234,16 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
             )
 
             # If the tool produced an image, send it as a photo
-            if tool_result.image_path and tool_result.success:
+            img_path = getattr(tool_result, "image_path", "")
+            if img_path and tool_result.success:
                 caption = decision.get("response", "")
-                await send_image_to_chat(message, tool_result.image_path, caption)
+                await send_image_to_chat(message, img_path, caption)
 
             # If the tool produced a file, send it as a document
-            if tool_result.file_path and tool_result.success:
+            f_path = getattr(tool_result, "file_path", "")
+            if f_path and tool_result.success:
                 caption = decision.get("response", "")
-                await send_file_to_chat(message, tool_result.file_path, caption)
+                await send_file_to_chat(message, f_path, caption)
 
             # Inject step metadata for the brain's process_tool_result
             decision["_step_number"] = step

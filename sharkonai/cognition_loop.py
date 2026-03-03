@@ -137,20 +137,28 @@ class CognitionLoop:
             from skills import get_loaded_skills, TOOL_MAP, _loaded_modules, get_skill_summary
             import os
 
-            skills_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skills")
-            skill_files = sorted(f for f in os.listdir(skills_dir)
-                                 if f.endswith(".py") and f != "__init__.py")
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            builtin_dir = os.path.join(base_dir, "skills")
+            ai_dir = os.path.join(base_dir, "skills_by_Sharkon")
 
-            # Count AI-generated vs built-in
+            builtin_files = sorted(f for f in os.listdir(builtin_dir)
+                                   if f.endswith(".py") and f != "__init__.py")
+
+            ai_files = []
+            if os.path.isdir(ai_dir):
+                ai_files = sorted(f for f in os.listdir(ai_dir)
+                                  if f.endswith(".py") and f != "__init__.py")
+
+            skill_files = builtin_files + ai_files
+
+            # Collect AI-generated skill details
             ai_generated = []
-            for filename in skill_files:
-                module_name = f"skills.{filename[:-3]}"
+            for filename in ai_files:
+                module_name = f"skills_by_Sharkon.{filename[:-3]}"
                 if module_name in _loaded_modules:
                     mod = _loaded_modules[module_name]
-                    doc = getattr(mod, "__doc__", "") or ""
-                    if "SharkonAI (auto-generated" in doc or "Author: SharkonAI" in doc:
-                        smap = getattr(mod, "SKILL_MAP", {})
-                        ai_generated.append(f"{filename}: {', '.join(smap.keys())}")
+                    smap = getattr(mod, "SKILL_MAP", {})
+                    ai_generated.append(f"{filename}: {', '.join(smap.keys())}")
 
             # Store inventory in state
             await self.memory.set_state("skills_total", str(len(skill_files)))

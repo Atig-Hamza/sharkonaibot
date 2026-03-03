@@ -26,8 +26,12 @@ TOOL_DEFINITIONS: List[dict] = []
 TOOL_MAP: Dict[str, Callable] = {}
 
 _skills_dir = os.path.dirname(os.path.abspath(__file__))
+_ai_skills_dir = os.path.join(os.path.dirname(_skills_dir), "skills_by_Sharkon")
 _loaded_modules: Dict[str, object] = {}
 _memory_ref = None
+
+# Ensure AI skills directory exists
+os.makedirs(_ai_skills_dir, exist_ok=True)
 
 
 def set_memory_ref(memory):
@@ -112,6 +116,8 @@ def load_all_skills():
         return
 
     total_tools = 0
+
+    # Load built-in skills from skills/
     skill_files = sorted(f for f in os.listdir(_skills_dir)
                          if f.endswith(".py") and f != "__init__.py")
 
@@ -129,20 +135,45 @@ def load_all_skills():
             log.info(f"  Loaded skill: {filename} ({count} tools)")
         total_tools += count
 
+    # Load AI-created skills from skills_by_Sharkon/
+    if os.path.isdir(_ai_skills_dir):
+        ai_skill_files = sorted(f for f in os.listdir(_ai_skills_dir)
+                                if f.endswith(".py") and f != "__init__.py")
+        for filename in ai_skill_files:
+            filepath = os.path.join(_ai_skills_dir, filename)
+            module_name = f"skills_by_Sharkon.{filename[:-3]}"
+
+            mod = _load_skill_module(filepath, module_name)
+            if mod is None:
+                continue
+
+            count = _register_skill(mod, module_name)
+            _loaded_modules[module_name] = mod
+            if count > 0:
+                log.info(f"  Loaded AI skill: {filename} ({count} tools)")
+            total_tools += count
+
     log.info(f"Skills system loaded: {len(_loaded_modules)} skills, {total_tools} tools total.")
 
 
-def load_single_skill(filename: str) -> bool:
+def load_single_skill(filename: str, ai_created: bool = False) -> bool:
     """
     Hot-load (or reload) a single skill file. Used when the AI creates a new skill at runtime.
     Returns True on success.
     """
-    filepath = os.path.join(_skills_dir, filename)
-    if not os.path.exists(filepath):
-        log.error(f"Skill file not found: {filepath}")
-        return False
+    # Determine if it's an AI-created skill or built-in
+    ai_path = os.path.join(_ai_skills_dir, filename)
+    builtin_path = os.path.join(_skills_dir, filename)
 
-    module_name = f"skills.{filename[:-3]}"
+    if ai_created or os.path.exists(ai_path):
+        filepath = ai_path
+        module_name = f"skills_by_Sharkon.{filename[:-3]}"
+    elif os.path.exists(builtin_path):
+        filepath = builtin_path
+        module_name = f"skills.{filename[:-3]}"
+    else:
+        log.error(f"Skill file not found in either directory: {filename}")
+        return False
 
     # If already loaded, remove old registrations
     if module_name in _loaded_modules:
@@ -193,8 +224,13 @@ def get_skill_summary() -> str:
     Used by the brain to maintain awareness of current capabilities.
     """
     lines = []
+    # Scan both built-in and AI-created skill directories
     skill_files = sorted(f for f in os.listdir(_skills_dir)
                          if f.endswith(".py") and f != "__init__.py")
+    ai_skill_files = []
+    if os.path.isdir(_ai_skills_dir):
+        ai_skill_files = sorted(f for f in os.listdir(_ai_skills_dir)
+                                if f.endswith(".py") and f != "__init__.py")
 
     builtin = set()
     custom = set()
@@ -219,6 +255,21 @@ def get_skill_summary() -> str:
             lines.append(f"  [AI-created] {filename}: {', '.join(tool_names)} — {desc_line}")
         else:
             builtin.add(filename)
+
+    # Also scan AI-created skills directory
+    for filename in ai_skill_files:
+        module_name = f"skills_by_Sharkon.{filename[:-3]}"
+        if module_name not in _loaded_modules:
+            continue
+        mod = _loaded_modules[module_name]
+        smap = getattr(mod, "SKILL_MAP", {})
+        tool_names = list(smap.keys())
+        if not tool_names:
+            continue
+        doc = getattr(mod, "__doc__", "") or ""
+        desc_line = doc.strip().split("\n")[0].strip() if doc.strip() else filename
+        custom.add(filename)
+        lines.append(f"  [AI-created] {filename}: {', '.join(tool_names)} — {desc_line}")
 
     summary = f"Skills loaded: {len(builtin)} built-in, {len(custom)} AI-created. "
     summary += f"Total tools: {len(TOOL_MAP)}."
