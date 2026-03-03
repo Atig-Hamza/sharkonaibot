@@ -72,20 +72,44 @@ def split_message(text: str, max_length: int = 4096) -> list[str]:
 
 # ── Safe Reply ──────────────────────────────────────────────────────────────
 
+def _strip_markdown(text: str) -> str:
+    """Remove Markdown formatting so Telegram shows clean plain text."""
+    import re
+    # Remove bold: **text** or __text__
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    text = re.sub(r'__(.+?)__', r'\1', text)
+    # Remove italic: *text* or _text_ (but not inside words like don't)
+    text = re.sub(r'(?<!\w)\*(.+?)\*(?!\w)', r'\1', text)
+    text = re.sub(r'(?<!\w)_(.+?)_(?!\w)', r'\1', text)
+    # Remove strikethrough: ~~text~~
+    text = re.sub(r'~~(.+?)~~', r'\1', text)
+    # Remove inline code: `text`
+    text = re.sub(r'`([^`]+)`', r'\1', text)
+    # Remove code blocks: ```...```
+    text = re.sub(r'```[\s\S]*?```', lambda m: m.group(0).strip('`').strip(), text)
+    # Remove heading markers: ## text -> text
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # Remove link syntax: [text](url) -> text (url)
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'\1 (\2)', text)
+    # Remove bullet markers: - or * at line start -> plain dash
+    text = re.sub(r'^[\*\-]\s+', '- ', text, flags=re.MULTILINE)
+    return text.strip()
+
+
 async def safe_reply(message: Message, text: str):
-    """Send a reply, handling Telegram parse errors gracefully."""
+    """Send a reply, stripping markdown and handling Telegram errors."""
     if not text or not text.strip():
-        text = "✅ Done."
+        text = "\u2705 Done."
+
+    # Strip markdown so Telegram shows clean plain text
+    text = _strip_markdown(text)
 
     chunks = split_message(text)
     for chunk in chunks:
         try:
-            await message.reply(chunk)
-        except Exception:
-            try:
-                await message.reply(chunk, parse_mode=None)
-            except Exception as e:
-                log.error(f"Failed to send message chunk: {e}")
+            await message.reply(chunk, parse_mode=None)
+        except Exception as e:
+            log.error(f"Failed to send message chunk: {e}")
 
 
 async def safe_edit(message: Message, text: str):
@@ -340,6 +364,14 @@ async def handle_text_message(message: Message):
         action = decision.get("action", "none")
 
         if action and action != "none":
+            # If the AI plans multiple steps, send a "please wait" message
+            if decision.get("continue", False):
+                wait_response = decision.get("response", "")
+                if wait_response and wait_response.strip():
+                    await safe_reply(message, wait_response)
+                else:
+                    await safe_reply(message, "\u23f3 Working on it, give me a moment...")
+
             # Execute tool chain (may be multi-step)
             final_response, chain_context = await execute_tool_chain(
                 message, user_text, decision
