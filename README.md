@@ -1,5 +1,4 @@
 ﻿
-
 <h1 align="center">🦈 SharkonAI</h1>
 
 <p align="center">
@@ -7,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/Telegram-Bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"/>
   <img src="https://img.shields.io/badge/NVIDIA-AI_Endpoint-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="NVIDIA"/>
   <img src="https://img.shields.io/badge/SQLite-Memory-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite"/>
@@ -15,23 +14,25 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/v2.0-Stable-brightgreen?style=flat-square" alt="Version"/>
-  <img src="https://img.shields.io/badge/Tools-47-blue?style=flat-square" alt="Tools"/>
+  <img src="https://img.shields.io/badge/v3.0-Stable-brightgreen?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Tools-51+-blue?style=flat-square" alt="Tools"/>
+  <img src="https://img.shields.io/badge/Chain_Steps-25-orange?style=flat-square" alt="Chain Steps"/>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white" alt="Platform"/>
   <img src="https://img.shields.io/badge/Voice-Recognition-FF6F00?style=flat-square" alt="Voice"/>
+  <img src="https://img.shields.io/badge/Self--Evolving-🧬-purple?style=flat-square" alt="Self-Evolving"/>
 </p>
 
 ---
 
-<br/>
-
 ## 🌊 Overview
 
-**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain with 47+ executable tools to perform *anything* — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision.
+**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain (NVIDIA-hosted models) with **51+ executable tools** to perform virtually anything — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision, to **creating its own new skills at runtime**.
 
-Think of it as your personal AI operator that can **see your screen**, **type on your keyboard**, **click with your mouse**, **manage files**, **browse the web**, **listen to your voice**, and **remember everything** — all orchestrated through a simple Telegram chat.
+Think of it as your personal AI operator that can **see your screen**, **type on your keyboard**, **click with your mouse**, **manage files**, **browse the web**, **listen to your voice**, **remember everything**, and **evolve its own capabilities** — all orchestrated through a simple Telegram chat.
 
-<br/>
+Send **`stop`** at any time to immediately cancel a running task.
+
+---
 
 ## ✨ Key Features
 
@@ -41,22 +42,24 @@ Think of it as your personal AI operator that can **see your screen**, **type on
 
 ### 🧠 Enhanced AI Brain
 - Chain-of-thought reasoning with deep task decomposition
-- Multi-step auto-continuation (up to 10 steps)
-- Dual-temperature system: creative mode & precise mode
-- Robust JSON extraction with multiple fallback strategies
-- Automatic retry on parsing failures
+- Multi-step auto-continuation (up to **25 steps** per task)
+- Dual-temperature system: creative mode (0.7) & precise mode (0.2)
+- Robust JSON extraction with 5 fallback strategies
+- Automatic retry on parsing failures (3 attempts)
+- Rich memory context injection (knowledge, summaries, active tasks)
 
 </td>
 <td width="50%" valign="top">
 
-### 🔧 47+ Executable Tools
-- **System**: Shell commands, PowerShell, Python execution
-- **Files**: Read, write, append, search, create PDFs
-- **GUI**: Mouse, keyboard, screenshots, OCR vision
+### 🔧 51+ Executable Tools
+- **System**: CMD, PowerShell, Python execution
+- **Files**: Read, write, append, search, create PDFs, send files
+- **GUI**: Mouse, keyboard, drag & drop, screenshots, OCR vision
 - **Network**: HTTP requests, file downloads
 - **Memory**: Permanent knowledge storage & recall
-- **Media**: Camera capture, image & file delivery
+- **Media**: Webcam capture, image & file delivery
 - **Voice**: Speech-to-text transcription
+- **Meta**: Self-evolving skill creation system
 
 </td>
 </tr>
@@ -64,22 +67,22 @@ Think of it as your personal AI operator that can **see your screen**, **type on
 <td width="50%" valign="top">
 
 ### 👁️ Screen Vision (OCR)
-- Analyze full screen or specific regions
-- Click on any visible text element by name
-- Drag-and-drop GUI elements with pixel precision
-- Smart text selection and region selection
-- Hover detection for tooltips & menus
+- Full-screen or regional OCR analysis via Tesseract
+- Click, hover, drag, and find any visible text element
+- Pixel-perfect drag-and-drop GUI automation
+- Smart text selection (word, line, range, all)
+- Active window detection
 - Dual OCR engine: Tesseract + Windows WinRT fallback
 
 </td>
 <td width="50%" valign="top">
 
 ### 🎤 Voice Recognition
-- **Auto-transcription** of Telegram voice messages
-- Powered by Google Web Speech API (free, no key needed)
-- Supports 50+ languages (en, fr, ar, es, de, zh, ja...)
-- OGG/MP3/M4A/FLAC/WebM format support via ffmpeg
-- Fallback to Windows System.Speech for offline use
+- Auto-transcription of Telegram voice messages
+- Google Web Speech API (free, no key needed)
+- Supports **50+ languages** (en, fr, ar, es, de, zh, ja…)
+- OGG / MP3 / M4A / FLAC / WebM support via ffmpeg
+- Windows System.Speech offline fallback
 - Voice messages processed as if user typed the text
 
 </td>
@@ -88,436 +91,460 @@ Think of it as your personal AI operator that can **see your screen**, **type on
 <td width="50%" valign="top">
 
 ### 📚 Persistent Memory
-- SQLite-backed message & action history
-- Knowledge base with category/key/value storage
-- Task tracking for multi-step operations
+- SQLite-backed message & action history (WAL mode)
+- Knowledge base with category/key/value + confidence scores
+- Task tracking for multi-step operations with progress
 - Conversation summarization for long-term context
-- Semantic search across all stored data
-- System state management
+- Full-text search across messages and knowledge
+- System state management (heartbeat, version, stats)
 
 </td>
 <td width="50%" valign="top">
 
-### 🛡️ Self-Recovery System
-- **Watchdog** monitors all subsystem health
-- Automatic restart of failed components
-- Heartbeat staleness detection
-- Configurable restart limits & intervals
-- Full graceful shutdown support
-- **Cognition Loop** for proactive health monitoring
+### 🧬 Self-Evolving Skills
+- **Creates its own new tools at runtime** — saved to `skills_by_Sharkon/`
+- Hot-reloads new skills instantly without restart
+- Can read, update, and delete its AI-created skills
+- Periodic autonomous skill evolution via cognition loop
+- Full skill inventory and introspection
+- Built-in vs AI-created skill separation
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🛡️ Self-Recovery
+- **Watchdog** monitors all subsystems continuously
+- Auto-restarts crashed cognition loops
+- Stale heartbeat detection and alerting
+- Graceful shutdown with OS signal handling
+- Restart attempt tracking with configurable limits
+
+</td>
+<td width="50%" valign="top">
+
+### 🛑 Task Control
+- Send **`stop`** or **`/stop`** to cancel any running task instantly
+- Cancels multi-step tool chains mid-execution
+- Cleans up status messages and typing indicators
+- Safe stop with partial progress preserved
+- Immediate feedback on stop confirmation
 
 </td>
 </tr>
 </table>
 
-<br/>
+---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         TELEGRAM USER                           │
-│                    (Authorized Operator)                         │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ Text / Voice / Documents / Photos
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    TELEGRAM HANDLER                              │
-│  • Text, Document, Photo, Voice message routing                 │
-│  • 🎤 Auto voice transcription (Speech-to-Text)                │
-│  • Multi-step tool chain executor                               │
-│  • Rich status messages with progress tracking                  │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        AI BRAIN                                  │
-│  • NVIDIA-hosted LLM (Kimi K2 Instruct)                        │
-│  • System prompt with full tool descriptions                    │
-│  • Chain-of-thought reasoning framework                         │
-│  • JSON decision output with auto-continuation                  │
-│  • Memory context injection per request                         │
-└───────┬─────────────────────────────────┬───────────────────────┘
-        │                                 │
-        ▼                                 ▼
-┌───────────────────┐          ┌─────────────────────────────────┐
-│   TOOL DISPATCH   │          │         MEMORY SYSTEM            │
-│                   │          │                                   │
-│  47 async tools   │          │  • Messages & Actions history     │
-│  across 9 cats    │◄────────►│  • Knowledge base                │
-│                   │          │  • Task tracker                   │
-│  See full list ↓  │          │  • State KV store                 │
-└───────────────────┘          │  • Conversation summaries         │
-                               └─────────────────────────────────┘
-        ▲
-        │ Health monitoring
-┌───────┴─────────────────────────────────────────────────────────┐
-│              WATCHDOG + COGNITION LOOP                           │
-│  • Component health checks every 30s                            │
-│  • Auto-restart failed subsystems                               │
-│  • System metrics (disk, DB size)                               │
-│  • Heartbeat pulse every 60s                                    │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Telegram User                          │
+│                    (Authorized Only)                         │
+└──────────────────────┬──────────────────────────────────────┘
+                       │  text / voice / files / photos
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Telegram Handler (aiogram v3)                 │
+│  • Message routing       • Voice transcription              │
+│  • Tool chain executor   • File/image delivery              │
+│  • Stop/cancel command   • Status messages                  │
+└─────────┬────────────────────┬──────────────────────────────┘
+          │                    │
+          ▼                    ▼
+┌──────────────────┐  ┌──────────────────────────────────────┐
+│   Brain (LLM)    │  │         Tool Dispatcher               │
+│  NVIDIA AI API   │  │  51+ tools across 11 skill modules   │
+│  Chain-of-thought│  │  + dynamically created AI skills      │
+│  JSON decisions  │  │  Timeout protection per tool call     │
+└────────┬─────────┘  └──────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐
+│  Memory (SQLite) │  │  Cognition Loop  │  │    Watchdog    │
+│  Messages/Actions│  │  Heartbeat       │  │  Health checks │
+│  Knowledge Base  │  │  System health   │  │  Auto-restart  │
+│  Tasks/Summaries │  │  Skill evolution │  │  Stale detect  │
+└──────────────────┘  └──────────────────┘  └────────────────┘
 ```
 
-<br/>
-
-## 🎤 Voice Recognition — How It Works
-
-When a user sends a voice message in Telegram, SharkonAI automatically:
-
-```
-1. 📥 Downloads the OGG voice file
-2. 🔄 Converts to WAV (via ffmpeg or pydub)
-3. 🎤 Transcribes using Google Web Speech API
-4. 💬 Shows "Heard: <text>" confirmation
-5. 🧠 Passes transcribed text to AI Brain
-6. ⚡ Executes any tools the user requested by voice
-7. 📤 Sends the response back to Telegram
-```
-
-**Supported languages:** English, French, Arabic, Spanish, German, Chinese, Japanese, Korean, Portuguese, Russian, Italian, Turkish, Hindi, and 40+ more.
-
-**Fallback chain:**
-| Priority | Engine | Requires | Notes |
-|----------|--------|----------|-------|
-| 1st | Google Web Speech API | Internet | Free, 50+ languages, high accuracy |
-| 2nd | Windows System.Speech | Nothing | Offline, English only |
-| 3rd | Manual `transcribe_audio` tool | Varies | AI can retry with different settings |
-
-<br/>
-
-## 🔧 Complete Tool Reference
-
-<details>
-<summary><b>💻 System & Execution (7 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `execute_cmd` | Run any system command asynchronously |
-| `execute_powershell` | Execute PowerShell scripts |
-| `run_python` | Execute Python code in a subprocess |
-| `get_system_info` | Comprehensive system information |
-| `get_running_processes` | List processes with optional filter |
-| `kill_process` | Terminate a process by PID or name |
-| `open_application` | Smart app launcher with name resolution |
-
-</details>
-
-<details>
-<summary><b>📁 File Operations (8 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `read_file` | Read file contents with optional line range |
-| `write_file` | Write content to a file |
-| `append_file` | Append content to an existing file |
-| `list_directory` | List directory contents with details |
-| `find_files` | Recursive glob-based file search |
-| `create_file` | Create text files & auto-send via Telegram |
-| `create_pdf` | Generate formatted PDF documents |
-| `send_file` | Send any file as a Telegram document |
-
-</details>
-
-<details>
-<summary><b>🖱️ GUI Automation — Basic (6 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `type_text` | Simulate keyboard typing with configurable speed |
-| `press_key` | Press keyboard keys (single or repeated) |
-| `hotkey` | Keyboard shortcuts (multi-key combos) |
-| `mouse_click` | Click at screen coordinates |
-| `mouse_move` | Move cursor to a position |
-| `mouse_scroll` | Scroll the mouse wheel |
-
-</details>
-
-<details>
-<summary><b>🎯 GUI Automation — High Precision (10 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `drag_and_drop` | Pixel-perfect drag with smooth easing |
-| `drag_text` | OCR-powered drag text element to target |
-| `mouse_hover` | Hover at position to trigger tooltips |
-| `hover_text` | Find and hover over text via OCR |
-| `select_text` | Multi-mode text selection (all/word/line/region) |
-| `select_region` | Click-drag rectangular region selection |
-| `scroll_smooth` | Fine-grained incremental scrolling (4 directions) |
-| `mouse_hold` | Press/release mouse button (for drawing, etc.) |
-| `get_mouse_position` | Get cursor position & pixel color |
-| `right_click_at` | Right-click context menu at coordinates |
-
-</details>
-
-<details>
-<summary><b>👁️ Screen Vision / OCR (5 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `screenshot` | Capture full screen & send as photo |
-| `analyze_screen` | OCR scan — all visible text with coordinates |
-| `click_text` | Find text on screen via OCR & click it |
-| `find_text_on_screen` | Locate text coordinates without clicking |
-| `get_active_window` | Active window info (title, PID, size, position) |
-
-</details>
-
-<details>
-<summary><b>🎤 Audio & Voice (2 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `transcribe_audio` | Speech-to-text for any audio file (OGG, WAV, MP3, M4A, FLAC, WebM). Supports 50+ languages. |
-| `take_photo` | Capture a photo from the webcam |
-
-</details>
-
-<details>
-<summary><b>🌐 Network (2 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `http_request` | HTTP GET with custom headers |
-| `download_file` | Download file from URL to disk |
-
-</details>
-
-<details>
-<summary><b>📋 Clipboard & Utility (3 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `get_clipboard` | Read system clipboard contents |
-| `set_clipboard` | Copy text to system clipboard |
-| `wait` | Pause execution for specified duration |
-
-</details>
-
-<details>
-<summary><b>🧠 Memory & Media (4 tools)</b></summary>
-
-| Tool | Description |
-|------|-------------|
-| `remember` | Store a fact in permanent knowledge base |
-| `recall` | Search stored knowledge by query |
-| `send_image` | Send a local image as a Telegram photo |
-| *(runtime)* | Context bundle auto-injected per request |
-
-</details>
-
-<br/>
+---
 
 ## 📂 Project Structure
 
 ```
 Sharkon AI/
-├── 📄 README.md                  # You are here
-├── 📄 requirements.txt           # Python dependencies
-├── 📄 .gitignore                 # Git ignore rules
-├── 📄 install_tesseract.ps1      # OCR engine installer (Windows)
-│
-└── 🦈 sharkonai/                 # Core package
-    ├── main.py                   # Entry point — boots all subsystems
-    ├── config.py                 # Central configuration (tokens, paths, limits)
-    ├── config.example.py         # Example config (safe to commit)
-    ├── brain.py                  # AI reasoning engine (NVIDIA LLM integration)
-    ├── tools.py                  # 47 async tools + dispatcher (2800+ lines)
-    ├── memory.py                 # SQLite persistent memory system
-    ├── telegram_handler.py       # Telegram bot handlers (text, voice, docs, photos)
-    ├── cognition_loop.py         # Background health & metrics loop
-    ├── watchdog.py               # Self-recovery monitoring system
-    ├── logger.py                 # Rotating file + console logger
-    └── media/                    # Generated files & downloads
-        └── downloads/            # Downloaded files storage
+├── README.md                    # This file
+├── requirements.txt             # Python dependencies
+└── sharkonai/
+    ├── main.py                  # Entry point — starts all subsystems
+    ├── config.py                # All settings and credentials
+    ├── config.example.py        # Template config (safe to share)
+    ├── brain.py                 # LLM reasoning engine (NVIDIA AI)
+    ├── memory.py                # SQLite persistent memory
+    ├── tools.py                 # Tool dispatcher with timeout & coercion
+    ├── telegram_handler.py      # Telegram bot (aiogram v3)
+    ├── cognition_loop.py        # Background autonomous loop
+    ├── watchdog.py              # Self-recovery monitor
+    ├── logger.py                # Rotating file + console logging
+    ├── database.db              # SQLite database (auto-created)
+    ├── sharkonai.log            # Log file (auto-created)
+    ├── media/                   # Generated files and media
+    │   └── downloads/           # Downloaded/uploaded files
+    ├── skills/                  # Built-in skill modules
+    │   ├── __init__.py          # Dynamic skill loader & registry
+    │   ├── system_commands.py   # CMD, PowerShell, Python execution
+    │   ├── file_operations.py   # File read/write/search/PDF/send
+    │   ├── gui_automation.py    # Mouse, keyboard, drag & drop
+    │   ├── screen_vision.py     # Screenshot, OCR, click-by-text
+    │   ├── audio_transcription.py  # Voice-to-text
+    │   ├── clipboard.py         # System clipboard access
+    │   ├── memory_tools.py      # Remember / recall knowledge
+    │   ├── network.py           # HTTP requests, downloads
+    │   ├── system_info.py       # System info, processes, webcam
+    │   ├── skill_developer.py   # Self-evolution: create/edit/delete skills
+    │   └── utility.py           # wait() and helpers
+    └── skills_by_Sharkon/       # AI-created skills (auto-generated)
+        └── *.py                 # Dynamically created at runtime
 ```
 
-<br/>
+---
 
-## 🚀 Getting Started
+## 🛠️ Complete Tool Reference
+
+### System & Execution
+| Tool | Description |
+|------|-------------|
+| `execute_cmd` | Execute any CMD / terminal command |
+| `execute_powershell` | Execute PowerShell scripts |
+| `run_python` | Execute Python code in a subprocess |
+
+### File Operations
+| Tool | Description |
+|------|-------------|
+| `read_file` | Read contents of a file |
+| `write_file` | Write content to a file |
+| `append_file` | Append content to an existing file |
+| `list_directory` | List directory contents |
+| `find_files` | Search for files by glob pattern |
+| `create_file` | Create a file and send it via Telegram |
+| `create_pdf` | Generate a PDF document |
+| `send_file` | Send an existing file as Telegram document |
+| `send_image` | Send an image to the user |
+
+### GUI Automation
+| Tool | Description |
+|------|-------------|
+| `type_text` | Type text (ASCII + Unicode support) |
+| `press_key` | Press a keyboard key |
+| `hotkey` | Press a key combination (e.g., Ctrl+C) |
+| `mouse_click` | Click at screen coordinates |
+| `mouse_move` | Move mouse cursor |
+| `mouse_scroll` | Scroll up or down |
+| `drag_and_drop` | Pixel-perfect drag operation |
+| `mouse_hover` | Hover at a position |
+| `select_text` | Select text (word / line / range / all) |
+| `select_region` | Rectangular drag-select |
+| `scroll_smooth` | Fine-grained directional scrolling |
+| `mouse_hold` | Press and hold / release mouse button |
+| `get_mouse_position` | Get cursor position + pixel color |
+| `right_click_at` | Right-click at coordinates |
+
+### Screen Vision & OCR
+| Tool | Description |
+|------|-------------|
+| `screenshot` | Capture a screenshot |
+| `analyze_screen` | OCR all on-screen text with coordinates |
+| `click_text` | Find text on screen via OCR and click it |
+| `find_text_on_screen` | Locate text position on screen |
+| `drag_text` | Drag from one text label to another |
+| `hover_text` | Hover over OCR-detected text |
+| `get_active_window` | Get the currently focused window name |
+
+### Voice & Audio
+| Tool | Description |
+|------|-------------|
+| `transcribe_audio` | Transcribe audio/voice to text |
+
+### Clipboard
+| Tool | Description |
+|------|-------------|
+| `get_clipboard` | Read system clipboard |
+| `set_clipboard` | Set system clipboard text |
+
+### Memory & Knowledge
+| Tool | Description |
+|------|-------------|
+| `remember` | Store a fact / preference in permanent memory |
+| `recall` | Retrieve stored knowledge by category or search |
+
+### Network
+| Tool | Description |
+|------|-------------|
+| `http_request` | Make an HTTP GET request |
+| `download_file` | Download a file from a URL |
+
+### System Info & Apps
+| Tool | Description |
+|------|-------------|
+| `get_system_info` | Get OS, CPU, memory, disk information |
+| `get_running_processes` | List running processes |
+| `kill_process` | Kill a process by name or PID |
+| `open_application` | Launch an application (smart Windows app registry) |
+| `take_photo` | Capture a photo via webcam |
+
+### Self-Evolution (Meta)
+| Tool | Description |
+|------|-------------|
+| `develop_skill` | Create a brand-new skill and hot-load it |
+| `list_skills` | Inventory all loaded skills and tools |
+| `read_skill` | Read source code of any skill |
+| `update_skill` | Modify an existing AI-created skill |
+| `delete_skill` | Remove an AI-created skill |
+
+### Utility
+| Tool | Description |
+|------|-------------|
+| `wait` | Sleep for N seconds (max 60) |
+
+> **+ any skills dynamically created by the AI** — these appear in `skills_by_Sharkon/` and are loaded automatically.
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Python 3.10+**
-- **Windows 10/11** (required for GUI automation & WinRT OCR)
-- **ffmpeg** (recommended for voice transcription — `winget install ffmpeg`)
-- **Telegram Bot Token** ([create one via @BotFather](https://t.me/BotFather))
-- **NVIDIA API Key** ([get one here](https://build.nvidia.com/))
+- **Python 3.9+**
+- **Windows** (GUI automation and OCR require a desktop environment)
+- **Tesseract OCR** installed and on PATH ([download](https://github.com/UB-Mannheim/tesseract/wiki))
+- **ffmpeg** installed and on PATH (for voice message transcription)
+- A **Telegram Bot** token from [@BotFather](https://t.me/BotFather)
+- An **NVIDIA AI** API key from [build.nvidia.com](https://build.nvidia.com/)
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/sharkonai.git
-cd sharkonai
-```
-
-### 2. Install Dependencies
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/your-username/sharkon-ai.git
+cd sharkon-ai
 pip install -r requirements.txt
 ```
 
-### 3. Install ffmpeg (for voice recognition)
-
-```powershell
-# Option A: winget (recommended)
-winget install ffmpeg
-
-# Option B: chocolatey
-choco install ffmpeg
-
-# Option C: manual — download from https://ffmpeg.org and add to PATH
-```
-
-> **Note:** Voice recognition will still work without ffmpeg using pydub as a fallback, but ffmpeg provides faster and more reliable audio conversion.
-
-### 4. (Optional) Install Tesseract OCR
-
-For enhanced screen vision capabilities:
-
-```powershell
-.\install_tesseract.ps1
-```
-
-> SharkonAI automatically falls back to Windows WinRT OCR if Tesseract is not available.
-
-### 5. Configure
+### 2. Configure
 
 Copy the example config and fill in your credentials:
 
 ```bash
-cp sharkonai/config.example.py sharkonai/config.py
+cd sharkonai
+cp config.example.py config.py
 ```
 
-Then edit `sharkonai/config.py` with your real values:
+Edit `config.py`:
 
 ```python
-TELEGRAM_BOT_TOKEN = "your-telegram-bot-token"
-AUTHORIZED_USER_ID = 123456789  # Your Telegram user ID
-NVIDIA_API_KEY = "nvapi-your-nvidia-api-key"
+TELEGRAM_BOT_TOKEN = "your-bot-token-here"
+AUTHORIZED_USER_ID = 123456789          # Your Telegram user ID
+NVIDIA_API_KEY     = "nvapi-your-key"   # NVIDIA AI endpoint key
 ```
 
-> 🔒 `config.py` is listed in `.gitignore` — your secrets will never be committed.
+> **Tip:** Send `/start` to [@userinfobot](https://t.me/userinfobot) on Telegram to get your user ID.
 
-### 6. Launch
+### 3. Run
 
 ```bash
-python sharkonai/main.py
+cd sharkonai
+python main.py
 ```
 
-You should see the startup banner:
+You'll see the startup banner:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║   ███████╗██╗  ██╗ █████╗ ██████╗ ██╗  ██╗ ██████╗ ███╗  ║
-║   ███████╗███████║███████║██████╔╝█████╔╝ ██║   ██║██╔██║ ║
-║                      A I   v 2 . 0                        ║
+║                      A I   v 3 . 0                        ║
 ║                                                           ║
-║   🧠 Enhanced Brain • ⛓️ Multi-Step Chains • 🔧 27 Tools  ║
-║   📚 Persistent Memory • 🛡️ Self-Recovery • 🤖 Autonomous ║
+║   🧠 Enhanced Brain • ⛓️ 25-Step Chains • 🔧 51+ Tools   ║
+║   🧬 Self-Evolving • 📚 Memory • 🛡️ Self-Recovery       ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
 
-<br/>
+Open your Telegram bot and start chatting!
 
-## ⚙️ Configuration Reference
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `COGNITION_INTERVAL_SECONDS` | `60` | Background loop tick interval |
-| `MAX_CONTEXT_MESSAGES` | `50` | Messages included in AI context |
-| `WATCHDOG_CHECK_INTERVAL` | `30` | Health check frequency (seconds) |
-| `MAX_RESTART_ATTEMPTS` | `5` | Auto-restart limit per component |
-| `CMD_TIMEOUT` | `180` | Command execution timeout (seconds) |
-| `MAX_CHAIN_STEPS` | `10` | Max auto-continuation depth |
-| `MAX_RETRIES` | `3` | JSON parsing retry attempts |
-| `CREATIVE_TEMPERATURE` | `0.7` | Temperature for conversations |
-| `PRECISE_TEMPERATURE` | `0.2` | Temperature for tool execution |
-| `MAX_TOKENS` | `4096` | Max response token length |
-| `MAX_TASK_HISTORY` | `50` | Tasks kept in history |
-| `SUMMARY_INTERVAL` | `20` | Summarize every N messages |
-
-<br/>
+---
 
 ## 💬 Usage Examples
 
-Once running, just message your bot on Telegram — by text **or voice**:
+| You say | SharkonAI does |
+|---------|---------------|
+| `What's my IP address?` | Runs a system command and reports the result |
+| `Take a screenshot` | Captures the screen and sends the image |
+| `Open Chrome and go to github.com` | Launches Chrome, types the URL, presses Enter (multi-step) |
+| `Create a PDF report of my system info` | Gathers system info → generates a PDF → sends it to you |
+| `Remember that my server IP is 192.168.1.100` | Stores it in permanent knowledge base |
+| `What was my server IP?` | Recalls it from memory |
+| `Read the file C:\data\report.csv` | Reads and sends the file contents |
+| `Download https://example.com/data.json` | Downloads the file to `media/downloads/` |
+| `stop` | **Immediately cancels** whatever task is running |
+| *(send a voice message)* | Transcribes it and processes as text |
 
-| You Say / Type | SharkonAI Does |
-|----------------|----------------|
-| 🎤 *"What's my system info?"* | Transcribes voice → runs `get_system_info` → reports OS, CPU, RAM |
-| *"Open Chrome and go to github.com"* | Launches Chrome → waits → types URL → navigates |
-| 🎤 *"Take a screenshot"* | Transcribes voice → captures screen → sends as photo |
-| *"Create a PDF report about Python"* | Generates a formatted PDF → sends as document |
-| *"What files are on my Desktop?"* | Lists directory contents with sizes |
-| 🎤 *"Remember my deadline is March 15"* | Transcribes → stores in permanent knowledge base |
-| *"What do you remember about my deadlines?"* | Searches knowledge base and reports back |
-| *"Download this image: [url]"* | Downloads file → sends to chat |
-| 🎤 *"Click on the Start button"* | Transcribes → OCR finds "Start" → clicks it |
+### Multi-Step Chains
 
-<br/>
+SharkonAI can autonomously execute up to **25 steps** for complex tasks. For example:
+
+> **You:** *"Find all .py files in my project, count the lines of code in each, and create a summary PDF"*
+
+SharkonAI will:
+1. `find_files` — Search for `.py` files
+2. `read_file` — Read each file (multiple steps)
+3. `run_python` — Count lines
+4. `create_pdf` — Generate the report
+5. `send_file` — Deliver it to you
+
+All automatically, with real-time status updates in chat.
+
+### Stopping a Task
+
+At any point during a multi-step operation, send:
+
+```
+stop
+```
+
+The current tool execution is cancelled immediately and you get a confirmation:
+
+> 🛑 Stopping the current task...
+
+---
+
+## ⚙️ Configuration Reference
+
+All settings live in `sharkonai/config.py`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | — | Your Telegram bot token |
+| `AUTHORIZED_USER_ID` | — | Your Telegram user ID (only this user can interact) |
+| `NVIDIA_API_KEY` | — | NVIDIA AI endpoint API key |
+| `NVIDIA_MODEL` | `moonshotai/kimi-k2-instruct` | LLM model to use |
+| `MAX_CHAIN_STEPS` | `25` | Maximum auto-continuation steps per task |
+| `MAX_TOKENS` | `4096` | Max tokens per LLM response |
+| `CREATIVE_TEMPERATURE` | `0.7` | Temperature for creative/conversational tasks |
+| `PRECISE_TEMPERATURE` | `0.2` | Temperature for tool execution |
+| `CMD_TIMEOUT` | `180` | Seconds timeout for shell commands |
+| `TOOL_TIMEOUT` | `120` | Seconds timeout per tool invocation |
+| `COGNITION_INTERVAL_SECONDS` | `60` | Background cognition loop interval |
+| `SKILL_EVOLUTION_ENABLED` | `True` | Allow autonomous skill creation |
+| `SKILL_EVOLUTION_INTERVAL` | `30` | Cognition ticks between evolution checks |
+| `MAX_CONTEXT_MESSAGES` | `50` | Messages included in LLM context |
+| `VOICE_LANGUAGES` | `["fr-FR", "en-US", "ar-SA"]` | Speech recognition language priority |
+| `WATCHDOG_CHECK_INTERVAL` | `30` | Health check interval (seconds) |
+| `MAX_RESTART_ATTEMPTS` | `5` | Max auto-restart attempts |
+
+---
+
+## 🔌 Dependencies
+
+```
+aiogram>=3.4.0          # Telegram bot framework (v3, async)
+openai>=1.12.0          # NVIDIA AI endpoint (OpenAI-compatible)
+aiohttp>=3.9.0          # Async HTTP client
+aiofiles>=23.0.0        # Async file I/O
+pyautogui>=0.9.54       # GUI automation (mouse, keyboard)
+pyperclip>=1.8.0        # System clipboard access
+Pillow>=10.0.0          # Image processing
+opencv-python>=4.8.0    # Webcam capture
+fpdf2>=2.7.0            # PDF generation
+SpeechRecognition>=3.10.0  # Voice-to-text
+pydub>=0.25.1           # Audio format conversion
+```
+
+**System requirements:**
+- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) — for screen vision / OCR tools
+- [ffmpeg](https://ffmpeg.org/download.html) — for voice message audio conversion
+
+---
+
+## 🧬 Skill Evolution
+
+SharkonAI can **create its own new tools** at runtime. When the AI encounters a task it doesn't have a tool for, it can:
+
+1. **Design** a new skill with full tool definitions
+2. **Write** the Python code and save it to `skills_by_Sharkon/`
+3. **Hot-load** the skill immediately — no restart required
+4. **Use** the new tool in the current task chain
+
+The cognition loop also periodically reviews the AI's capabilities and autonomously creates skills it thinks would be useful.
+
+All AI-created skills follow the same interface as built-in skills:
+
+```python
+# skills_by_Sharkon/my_new_skill.py
+SKILL_DEFINITIONS = [
+    {
+        "name": "my_new_tool",
+        "description": "Does something useful",
+        "parameters": {"param1": "Description of param1"}
+    }
+]
+
+async def my_new_tool(param1: str) -> dict:
+    # ... implementation ...
+    return {"success": True, "stdout": "Result here"}
+
+SKILL_MAP = {"my_new_tool": my_new_tool}
+```
+
+---
+
+## 📋 Subsystem Overview
+
+| Subsystem | File | Purpose |
+|-----------|------|---------|
+| **Main** | `main.py` | Entry point, starts all subsystems, graceful shutdown |
+| **Brain** | `brain.py` | LLM reasoning, JSON decisions, task classification |
+| **Memory** | `memory.py` | SQLite persistence (messages, actions, knowledge, tasks) |
+| **Telegram** | `telegram_handler.py` | Bot interface, tool chains, stop command, voice/file handling |
+| **Tools** | `tools.py` | Tool dispatch with timeout, result coercion |
+| **Skills** | `skills/` | 11 built-in skill modules + dynamic loader |
+| **Cognition** | `cognition_loop.py` | Background health checks, stats, skill evolution |
+| **Watchdog** | `watchdog.py` | Auto-restart, heartbeat monitoring |
+| **Logger** | `logger.py` | Rotating file + console logging |
+| **Config** | `config.py` | All settings and credentials |
+
+---
 
 ## 🔒 Security
 
-- **Single-user authorization** — only the configured `AUTHORIZED_USER_ID` can interact
+- **Single-user authorization** — only one Telegram user ID can interact with the bot
+- All unauthorized access attempts are logged
+- Credentials are stored in `config.py` (excluded from version control)
+- The bot runs locally on your machine — no cloud servers required
 - **Fail-safe GUI** — PyAutoGUI fail-safe enabled (move mouse to top-left corner to abort)
-- **Command timeouts** — all shell commands have a 180s timeout
-- **Graceful shutdown** — handles SIGINT/SIGTERM for clean exit
+- Command timeouts prevent runaway processes
 
-> ⚠️ **Important:** Keep your `config.py` credentials secure. Never commit API keys to a public repository. Use `config.example.py` as a template and `.gitignore` to protect your secrets.
+> ⚠️ **Warning:** SharkonAI has full access to your system (commands, files, GUI). Only run it on machines you trust and keep your bot token / config private.
 
-<br/>
+---
 
-## 🛠️ Tech Stack
+## 🗺️ Roadmap
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/asyncio-FFD43B?style=for-the-badge&logo=python&logoColor=black" alt="asyncio"/>
-  <img src="https://img.shields.io/badge/aiogram_v3-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="aiogram"/>
-  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite"/>
-  <img src="https://img.shields.io/badge/PyAutoGUI-FF6F00?style=for-the-badge" alt="PyAutoGUI"/>
-  <img src="https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" alt="OpenCV"/>
-  <img src="https://img.shields.io/badge/SpeechRecognition-4CAF50?style=for-the-badge" alt="SpeechRecognition"/>
-  <img src="https://img.shields.io/badge/ffmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="ffmpeg"/>
-</p>
-
-| Component | Technology |
-|-----------|-----------|
-| **Runtime** | Python 3.10+ with `asyncio` |
-| **AI Model** | Kimi K2 Instruct via NVIDIA API |
-| **Telegram** | aiogram v3 (async) |
-| **Database** | SQLite3 (file-based, zero-config) |
-| **GUI Control** | PyAutoGUI + pyperclip |
-| **OCR** | Tesseract / Windows WinRT (dual fallback) |
-| **Voice/STT** | SpeechRecognition + Google Web Speech API |
-| **Audio Conversion** | ffmpeg / pydub |
-| **Image Processing** | Pillow + OpenCV |
-| **PDF Generation** | fpdf2 |
-| **Logging** | Python `logging` with rotating file handler |
-
-<br/>
-
-## 📈 Roadmap
-
-- [x] 🎤 Voice message transcription (Speech-to-Text)
-- [ ] 🌍 Multi-language auto-detection for voice
-- [ ] 🗣️ Text-to-Speech responses (voice replies)
-- [ ] 🧩 Plugin system for community-built tools
-- [ ] 📊 Web dashboard for monitoring & analytics
-- [ ] 🔗 Multi-model support (OpenAI, Anthropic, local LLMs)
-- [ ] 🐧 Linux & macOS GUI automation support
-- [ ] 🤝 Multi-user authorization with role-based access
-
-<br/>
+- [x] Multi-step tool chaining (up to 25 steps)
+- [x] Voice message transcription
+- [x] Self-evolving skill creation
+- [x] Task stop/cancel command
+- [ ] Web browsing skill (Playwright/Selenium integration)
+- [ ] Scheduled tasks and cron-like automation
+- [ ] Multi-user support with role-based access
+- [ ] Plugin marketplace for community skills
+- [ ] Linux / macOS GUI automation support
+- [ ] Image generation / editing tools
+- [ ] Text-to-Speech voice replies
+- [ ] Email sending and reading
 
 ---
 
 <p align="center">
-  Built with 🦈 by <b>SharkonAI Team</b>
-</p>
-
-<p align="center">
-  <sub>If SharkonAI is swimming in your Telegram, you're in good waters. 🌊</sub>
+  <b>Built with 🦈 by the SharkonAI team</b><br/>
+  <sub>Autonomous AI that sees, thinks, acts, and evolves.</sub>
 </p>
