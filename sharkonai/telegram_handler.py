@@ -29,14 +29,17 @@ router = Router()
 # These will be injected at startup
 _memory: Memory = None
 _brain: Brain = None
+_autonomous_engine = None  # Autonomous engine reference
+_processing_tasks: dict = {}  # Track active processing tasks per user
 
 
-def init_handler(memory: Memory, brain: Brain):
+def init_handler(memory: Memory, brain: Brain, autonomous_engine=None):
     """Inject dependencies into the handler module."""
-    global _memory, _brain
+    global _memory, _brain, _autonomous_engine
     _memory = memory
     _brain = brain
-    log.info("Telegram handler initialized with memory and brain.")
+    _autonomous_engine = autonomous_engine
+    log.info("Telegram handler initialized with memory, brain, and autonomous engine.")
 
 
 # ── Authorization ───────────────────────────────────────────────────────────
@@ -368,11 +371,27 @@ async def execute_tool_chain(message: Message, user_text: str, initial_decision:
     return final_response, chain_context
 
 
+# ── Status Query Detection ──────────────────────────────────────────────────
+
+_STATUS_KEYWORDS = [
+    "what are you doing", "what r u doing", "what's happening",
+    "status", "/status", "what are u doing", "busy?", "are you busy",
+    "what is your status", "progress", "what's going on", "que fais-tu",
+    "tu fais quoi", "ach katdir", "wach khdam",
+]
+
+
+def _is_status_query(text: str) -> bool:
+    """Detect if the user is asking about the agent's current status."""
+    text_lower = text.lower().strip()
+    return any(kw in text_lower for kw in _STATUS_KEYWORDS)
+
+
 # ── Message Handler ─────────────────────────────────────────────────────────
 
 @router.message(F.text)
 async def handle_text_message(message: Message):
-    """Handle incoming text messages with multi-step tool chaining."""
+    """Handle incoming text messages — non-blocking, status-aware, concurrent."""
     user_id = message.from_user.id
 
     # Authorization check
@@ -387,6 +406,15 @@ async def handle_text_message(message: Message):
 
     log.info(f"Message from authorized user: {user_text[:100]}...")
 
+    # Notify autonomous engine that user is active
+    if _autonomous_engine:
+        _autonomous_engine.notify_user_active()
+
+    # ── Status query — answer immediately without blocking ──
+    if _is_status_query(user_text):
+        await _handle_status_query(message)
+        return
+
     # Store user message in memory
     await _memory.store_message(
         role="user",
@@ -395,6 +423,45 @@ async def handle_text_message(message: Message):
         message_id=message.message_id,
     )
 
+    # Log user activity
+    await _memory.log_activity("user_message", f"User: {user_text[:100]}")
+
+    # Process in background task so user can send more messages
+    task = asyncio.create_task(_process_user_message(message, user_text, user_id))
+    _processing_tasks[user_id] = task
+
+    # Clean up when done
+    def _cleanup(t):
+        _processing_tasks.pop(user_id, None)
+    task.add_done_callback(_cleanup)
+
+
+async def _handle_status_query(message: Message):
+    """Respond to a status query immediately — no AI call needed."""
+    try:
+        lines = []
+
+        # Get autonomous engine status
+        if _autonomous_engine:
+            status_text = await _autonomous_engine.get_status_summary()
+            lines.append(status_text)
+        else:
+            lines.append("Autonomous engine not active.")
+
+        # Check if processing a user task
+        user_id = message.from_user.id
+        if user_id in _processing_tasks and not _processing_tasks[user_id].done():
+            lines.insert(0, "I'm also processing your previous request right now.\n")
+
+        await safe_reply(message, "\n".join(lines))
+
+    except Exception as e:
+        log.error(f"Error handling status query: {e}")
+        await safe_reply(message, f"Status check error: {e}")
+
+
+async def _process_user_message(message: Message, user_text: str, user_id: int):
+    """Process a user message in the background — non-blocking."""
     # Show typing indicator
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
@@ -435,6 +502,7 @@ async def handle_text_message(message: Message):
 
         # Store assistant response in memory
         await _memory.store_message(role="assistant", content=final_response)
+        await _memory.log_activity("assistant_response", f"Responded to: {user_text[:60]}")
 
         # Send the response safely
         await safe_reply(message, final_response)
