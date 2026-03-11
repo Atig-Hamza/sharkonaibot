@@ -96,6 +96,31 @@ class Memory:
                     topics TEXT DEFAULT '[]'
                 );
 
+                -- Autonomous goals / agenda
+                CREATE TABLE IF NOT EXISTS goals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    priority INTEGER DEFAULT 5,
+                    status TEXT DEFAULT 'pending',
+                    plan TEXT DEFAULT '[]',
+                    current_step INTEGER DEFAULT 0,
+                    result TEXT DEFAULT '',
+                    error TEXT DEFAULT '',
+                    source TEXT DEFAULT 'autonomous',
+                    metadata TEXT DEFAULT '{}'
+                );
+
+                -- Activity log for real-time status queries
+                CREATE TABLE IF NOT EXISTS activity_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    activity_type TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    details TEXT DEFAULT '{}'
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
                 CREATE INDEX IF NOT EXISTS idx_messages_role ON messages(role);
                 CREATE INDEX IF NOT EXISTS idx_actions_timestamp ON actions(timestamp);
@@ -103,6 +128,9 @@ class Memory:
                 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
                 CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge(category);
                 CREATE INDEX IF NOT EXISTS idx_knowledge_key ON knowledge(key);
+                CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+                CREATE INDEX IF NOT EXISTS idx_goals_priority ON goals(priority);
+                CREATE INDEX IF NOT EXISTS idx_activity_log_timestamp ON activity_log(timestamp);
             """)
             conn.commit()
             log.info("Memory database initialized successfully (enhanced schema).")
@@ -461,16 +489,157 @@ class Memory:
                 conn.close()
 
     async def get_context_bundle(self) -> dict:
-        """Build a rich context bundle for the AI brain — includes messages, actions, knowledge, tasks, summaries."""
+        """Build a rich context bundle for the AI brain — includes messages, actions, knowledge, tasks, summaries, and autonomous state."""
         messages = await self.get_recent_messages(limit=CONFIG.MAX_CONTEXT_MESSAGES)
         actions = await self.get_recent_actions(limit=8)
         knowledge = await self.get_knowledge(limit=15)
         tasks = await self.get_active_tasks()
         summaries = await self.get_recent_summaries(limit=3)
+        active_goals = await self.get_pending_goals(limit=5)
+        recent_activity = await self.get_recent_activity(limit=5)
         return {
             "messages": messages,
             "actions": actions,
             "knowledge": knowledge,
             "active_tasks": tasks,
             "summaries": summaries,
+            "active_goals": active_goals,
+            "recent_activity": recent_activity,
+        }
+
+    # ── Goals (Autonomous Agenda) ───────────────────────────────────────────
+
+    async def create_goal(self, title: str, description: str, priority: int = 5,
+                          plan: list = None, source: str = "autonomous", metadata: dict = None) -> int:
+        """Create an autonomous goal. Returns goal_id."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                cursor = conn.execute(
+                    """INSERT INTO goals (timestamp, title, description, priority, status, plan, source, metadata)
+                       VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)""",
+                    (
+                        datetime.utcnow().isoformat(),
+                        title,
+                        description,
+                        priority,
+                        json.dumps(plan or []),
+                        source,
+                        json.dumps(metadata or {}),
+                    ),
+                )
+                conn.commit()
+                goal_id = cursor.lastrowid
+                log.info(f"Created goal #{goal_id}: {title} (priority {priority})")
+                return goal_id
+            finally:
+                conn.close()
+
+    async def update_goal(self, goal_id: int, status: str = None, current_step: int = None,
+                          plan: list = None, result: str = None, error: str = None):
+        """Update a goal's progress."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                updates = []
+                params = []
+                if status is not None:
+                    updates.append("status = ?")
+                    params.append(status)
+                if current_step is not None:
+                    updates.append("current_step = ?")
+                    params.append(current_step)
+                if plan is not None:
+                    updates.append("plan = ?")
+                    params.append(json.dumps(plan))
+                if result is not None:
+                    updates.append("result = ?")
+                    params.append(result)
+                if error is not None:
+                    updates.append("error = ?")
+                    params.append(error)
+                if updates:
+                    params.append(goal_id)
+                    conn.execute(
+                        f"UPDATE goals SET {', '.join(updates)} WHERE id = ?",
+                        tuple(params),
+                    )
+                    conn.commit()
+            finally:
+                conn.close()
+
+    async def get_pending_goals(self, limit: int = 10) -> list[dict]:
+        """Get goals that need processing, ordered by priority."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                rows = conn.execute(
+                    """SELECT id, title, description, priority, status, plan, current_step, source, timestamp
+                       FROM goals WHERE status IN ('pending', 'in_progress')
+                       ORDER BY priority ASC, id ASC LIMIT ?""",
+                    (limit,),
+                ).fetchall()
+                return [dict(row) for row in rows]
+            finally:
+                conn.close()
+
+    async def get_all_goals(self, limit: int = 20) -> list[dict]:
+        """Get all recent goals regardless of status."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                rows = conn.execute(
+                    """SELECT id, title, description, priority, status, plan, current_step, result, error, timestamp
+                       FROM goals ORDER BY id DESC LIMIT ?""",
+                    (limit,),
+                ).fetchall()
+                return [dict(row) for row in rows]
+            finally:
+                conn.close()
+
+    # ── Activity Log ────────────────────────────────────────────────────────
+
+    async def log_activity(self, activity_type: str, description: str, details: dict = None):
+        """Log an activity for real-time status queries."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                conn.execute(
+                    """INSERT INTO activity_log (timestamp, activity_type, description, details)
+                       VALUES (?, ?, ?, ?)""",
+                    (datetime.utcnow().isoformat(), activity_type, description, json.dumps(details or {})),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+    async def get_recent_activity(self, limit: int = 10) -> list[dict]:
+        """Get recent activity entries."""
+        async with self._lock:
+            conn = self._get_conn()
+            try:
+                rows = conn.execute(
+                    """SELECT activity_type, description, details, timestamp
+                       FROM activity_log ORDER BY id DESC LIMIT ?""",
+                    (limit,),
+                ).fetchall()
+                return [dict(row) for row in reversed(rows)]
+            finally:
+                conn.close()
+
+    async def get_current_status(self) -> dict:
+        """Build a comprehensive status snapshot for user queries."""
+        active_goals = await self.get_pending_goals(limit=5)
+        recent_activity = await self.get_recent_activity(limit=5)
+        msg_count = await self.get_message_count()
+        action_count = await self.get_action_count()
+        status = await self.get_state("status") or "unknown"
+        last_hb = await self.get_state("last_heartbeat") or "unknown"
+        return {
+            "status": status,
+            "last_heartbeat": last_hb,
+            "total_messages": msg_count,
+            "total_actions": action_count,
+            "active_goals": active_goals,
+            "recent_activity": recent_activity,
         }
