@@ -3,10 +3,11 @@ SharkonAI — Main Entry Point
 Autonomous AI Agent for Telegram, powered by NVIDIA Qwen model.
 
 Starts all subsystems:
-  • Memory (SQLite) — Enhanced with knowledge base and task tracking
+  • Memory (SQLite) — Enhanced with knowledge base, task tracking, and goal system
   • Brain (NVIDIA AI) — Enhanced with chain-of-thought and multi-step planning
-  • Telegram Bot (aiogram v3) — Enhanced with tool chaining
-  • Cognition Loop — Enhanced with system health monitoring
+  • Telegram Bot (aiogram v3) — Non-blocking with concurrent user interaction
+  • Cognition Loop — System health monitoring and skill evolution
+  • Autonomous Engine — Self-directed goal generation, planning, and execution
   • Watchdog — Self-recovery system
 """
 
@@ -23,6 +24,7 @@ from logger import log
 from memory import Memory
 from brain import Brain
 from cognition_loop import CognitionLoop
+from autonomous_engine import AutonomousEngine
 from watchdog import Watchdog
 from telegram_handler import init_handler, create_bot_and_dispatcher
 from tools import TOOL_MAP
@@ -39,10 +41,11 @@ BANNER = r"""
 ║   ╚════██║██╔══██║██╔══██║██╔══██╗██╔═██╗ ██║   ██║████║  ║
 ║   ███████║██║  ██║██║  ██║██║  ██║██║  ██╗╚██████╔╝╚███║  ║
 ║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚══╝  ║
-║                      A I   v 3 . 0                        ║
+║                      A I   v 4 . 0                        ║
 ║                                                           ║
-║   🧠 Enhanced Brain • ⛓️ 25-Step Chains • 🔧 51+ Tools   ║
-║   🧬 Self-Evolving • 📚 Memory • 🛡️ Self-Recovery       ║
+║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 51+ Tools ║
+║   🧬 Self-Evolving • 📚 Memory • 🛡️ Self-Recovery        ║
+║   🤖 Self-Directing • 🎯 Goal Engine • 💬 Non-Blocking   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 """
@@ -52,11 +55,11 @@ async def main():
     """Initialize and run all SharkonAI subsystems."""
     print(BANNER)
     log.info("=" * 60)
-    log.info("SharkonAI v3.0 starting up...")
+    log.info("SharkonAI v4.0 starting up...")
     log.info("=" * 60)
 
     # ── 1. Memory System ──
-    log.info("[1/5] Initializing Enhanced Memory System...")
+    log.info("[1/6] Initializing Enhanced Memory System...")
     memory = Memory()
     msg_count = await memory.get_message_count()
     action_count = await memory.get_action_count()
@@ -73,42 +76,58 @@ async def main():
         log.info("  Stored initial system knowledge.")
 
     # ── 2. Brain ──
-    log.info("[2/5] Initializing Enhanced AI Brain...")
+    log.info("[2/6] Initializing Enhanced AI Brain...")
     brain = Brain(memory)
     log.info(f"  Model: {CONFIG.NVIDIA_MODEL}")
     log.info(f"  Max chain steps: {CONFIG.MAX_CHAIN_STEPS}")
     log.info(f"  Max tokens: {CONFIG.MAX_TOKENS}")
 
     # ── 3. Cognition Loop ──
-    log.info("[3/5] Starting Cognition Loop...")
+    log.info("[3/6] Starting Cognition Loop...")
     cognition = CognitionLoop(memory)
     cognition.set_brain(brain)  # Enable autonomous skill evolution
     await cognition.start()
 
-    # ── 4. Watchdog ──
-    log.info("[4/5] Starting Watchdog...")
+    # ── 4. Autonomous Engine ──
+    autonomous = None
+    if CONFIG.AUTONOMOUS_ENABLED:
+        log.info("[4/6] Starting Autonomous Engine...")
+        autonomous = AutonomousEngine(memory)
+        autonomous.set_brain(brain)
+        await autonomous.start()
+        log.info(f"  Cycle interval: {CONFIG.AUTONOMOUS_CYCLE_SECONDS}s")
+        log.info(f"  User pause: {CONFIG.AUTONOMOUS_PAUSE_AFTER_USER}s")
+    else:
+        log.info("[4/6] Autonomous Engine: DISABLED")
+
+    # ── 5. Watchdog ──
+    log.info("[5/6] Starting Watchdog...")
     watchdog = Watchdog(memory, cognition)
     await watchdog.start()
 
-    # ── 5. Telegram Bot ──
-    log.info("[5/5] Starting Telegram Bot...")
-    init_handler(memory, brain)
+    # ── 6. Telegram Bot ──
+    log.info("[6/6] Starting Telegram Bot...")
+    init_handler(memory, brain, autonomous)
     bot, dp = create_bot_and_dispatcher()
 
     # Store startup state
     await memory.set_state("status", "running")
-    await memory.set_state("version", "3.0")
+    await memory.set_state("version", "4.0")
     await memory.set_state("startup_time", __import__("datetime").datetime.utcnow().isoformat())
 
     log.info("=" * 60)
-    log.info("🚀 SharkonAI v3.0 is ONLINE and ready!")
+    log.info("🚀 SharkonAI v4.0 is ONLINE and ready!")
     log.info(f"  Authorized user: {CONFIG.AUTHORIZED_USER_ID}")
     log.info(f"  AI Model: {CONFIG.NVIDIA_MODEL}")
     log.info(f"  Database: {CONFIG.DATABASE_PATH}")
     log.info(f"  Tools available: {len(TOOL_MAP)}")
     log.info(f"  Max chain depth: {CONFIG.MAX_CHAIN_STEPS}")
     log.info(f"  Skill evolution: {'enabled' if CONFIG.SKILL_EVOLUTION_ENABLED else 'disabled'}")
+    log.info(f"  Autonomous engine: {'enabled' if CONFIG.AUTONOMOUS_ENABLED else 'disabled'}")
     log.info("=" * 60)
+
+    # Log startup activity
+    await memory.log_activity("system_start", "SharkonAI v4.0 started successfully")
 
     # Graceful shutdown handler
     shutdown_event = asyncio.Event()
@@ -116,10 +135,13 @@ async def main():
     async def shutdown():
         log.info("Shutting down SharkonAI...")
         await memory.set_state("status", "stopping")
+        if autonomous:
+            await autonomous.stop()
         await watchdog.stop()
         await cognition.stop()
         await bot.session.close()
         await memory.set_state("status", "stopped")
+        await memory.log_activity("system_stop", "SharkonAI shut down gracefully")
         log.info("SharkonAI has shut down gracefully.")
         shutdown_event.set()
 
