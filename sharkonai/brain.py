@@ -323,6 +323,27 @@ You have PERMANENT MEMORY that persists across conversations:
 {summaries_context}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AUTONOMOUS MODE — SELF-AWARENESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You operate AUTONOMOUSLY. You don't wait for instructions — you self-direct.
+You have a background engine that continuously:
+  1. Reflects on gaps in your capabilities
+  2. Generates goals to improve yourself
+  3. Plans and executes those goals step-by-step
+  4. Logs everything for transparency
+
+When the user asks what you're doing, you can see your current activity
+and goals in your context. Be transparent about it.
+
+{autonomous_context}
+
+When asked to do a task, you don't need step-by-step user guidance.
+You break it down yourself, plan it, and execute it fully.
+You NEVER ask "what should I do next?" — you decide yourself.
+You NEVER say "waiting for your input" — you figure it out.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RESPONSE FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -358,6 +379,7 @@ def _build_system_prompt(memory_context: dict = None) -> str:
     knowledge_context = ""
     active_tasks_context = ""
     summaries_context = ""
+    autonomous_context = ""
 
     if memory_context:
         # Inject knowledge
@@ -384,6 +406,29 @@ def _build_system_prompt(memory_context: dict = None) -> str:
                 lines.append(f"  • [{s['timestamp'][:10]}] {s['summary'][:200]}")
             summaries_context = "\n".join(lines)
 
+        # Inject autonomous goals and activity
+        active_goals = memory_context.get("active_goals", [])
+        recent_activity = memory_context.get("recent_activity", [])
+        if active_goals or recent_activity:
+            lines = ["Current autonomous state:"]
+            if active_goals:
+                lines.append("  Active goals:")
+                for g in active_goals[:5]:
+                    plan = g.get("plan", "[]")
+                    if isinstance(plan, str):
+                        try:
+                            import json as _j
+                            plan = _j.loads(plan)
+                        except Exception:
+                            plan = []
+                    step = g.get("current_step", 0)
+                    lines.append(f"    - [{g.get('priority', '?')}] {g['title']} (step {step}/{len(plan)}) [{g['status']}]")
+            if recent_activity:
+                lines.append("  Recent activity:")
+                for a in recent_activity[-5:]:
+                    lines.append(f"    - [{a['timestamp'][:19]}] {a['description']}")
+            autonomous_context = "\n".join(lines)
+
     prompt = SYSTEM_PROMPT_TEMPLATE.format(
         datetime_now=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
         tools_prompt=get_tools_prompt(),
@@ -391,6 +436,7 @@ def _build_system_prompt(memory_context: dict = None) -> str:
         knowledge_context=knowledge_context,
         active_tasks_context=active_tasks_context,
         summaries_context=summaries_context,
+        autonomous_context=autonomous_context,
     )
     return prompt
 
