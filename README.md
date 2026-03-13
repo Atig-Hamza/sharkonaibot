@@ -1,4 +1,4 @@
-﻿
+
 <h1 align="center">🦈 SharkonAI</h1>
 
 <p align="center">
@@ -14,11 +14,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/v3.0-Stable-brightgreen?style=flat-square" alt="Version"/>
-  <img src="https://img.shields.io/badge/Tools-51+-blue?style=flat-square" alt="Tools"/>
+  <img src="https://img.shields.io/badge/v4.0-Stable-brightgreen?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Tools-56+-blue?style=flat-square" alt="Tools"/>
   <img src="https://img.shields.io/badge/Chain_Steps-25-orange?style=flat-square" alt="Chain Steps"/>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white" alt="Platform"/>
   <img src="https://img.shields.io/badge/Voice-Recognition-FF6F00?style=flat-square" alt="Voice"/>
+  <img src="https://img.shields.io/badge/Web-Browsing-1a73e8?style=flat-square&logo=googlechrome&logoColor=white" alt="Web Browsing"/>
   <img src="https://img.shields.io/badge/Self--Evolving-🧬-purple?style=flat-square" alt="Self-Evolving"/>
 </p>
 
@@ -26,7 +27,7 @@
 
 ## 🌊 Overview
 
-**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain (NVIDIA-hosted models) with **51+ executable tools** to perform virtually anything — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision, to **creating its own new skills at runtime**.
+**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain (NVIDIA-hosted models) with **56+ executable tools** to perform virtually anything — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision, to **searching and browsing the full web**, to **creating its own new skills at runtime**.
 
 Think of it as your personal AI operator that can **see your screen**, **type on your keyboard**, **click with your mouse**, **manage files**, **browse the web**, **listen to your voice**, **remember everything**, and **evolve its own capabilities** — all orchestrated through a simple Telegram chat.
 
@@ -47,14 +48,16 @@ Send **`stop`** at any time to immediately cancel a running task.
 - Robust JSON extraction with 5 fallback strategies
 - Automatic retry on parsing failures (3 attempts)
 - Rich memory context injection (knowledge, summaries, active tasks)
+- **Smart shortest-path resolution** — always picks the fastest tool
 
 </td>
 <td width="50%" valign="top">
 
-### 🔧 51+ Executable Tools
+### 🔧 56+ Executable Tools
 - **System**: CMD, PowerShell, Python execution
 - **Files**: Read, write, append, search, create PDFs, send files
 - **GUI**: Mouse, keyboard, drag & drop, screenshots, OCR vision
+- **Web**: Search, browse, screenshot, form automation, data extraction
 - **Network**: HTTP requests, file downloads
 - **Memory**: Permanent knowledge storage & recall
 - **Media**: Webcam capture, image & file delivery
@@ -66,6 +69,18 @@ Send **`stop`** at any time to immediately cancel a running task.
 <tr>
 <td width="50%" valign="top">
 
+### 🌐 Web Browsing (NEW)
+- **`web_search`** — DuckDuckGo search, no JS, instant results
+- **`web_browse`** — Read any URL (fast HTTP or JS-rendered)
+- **`web_screenshot`** — Full-page screenshot → sent to Telegram
+- **`web_interact`** — Fill forms, click buttons, multi-step flows
+- **`web_extract_data`** — Smart extraction: emails, prices, links, phones
+- Playwright (Chromium headless) for JS-heavy sites
+- Always picks the fastest path: search snippet → browse → JS
+
+</td>
+<td width="50%" valign="top">
+
 ### 👁️ Screen Vision (OCR)
 - Full-screen or regional OCR analysis via Tesseract
 - Click, hover, drag, and find any visible text element
@@ -75,6 +90,8 @@ Send **`stop`** at any time to immediately cancel a running task.
 - Dual OCR engine: Tesseract + Windows WinRT fallback
 
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### 🎤 Voice Recognition
@@ -86,8 +103,6 @@ Send **`stop`** at any time to immediately cancel a running task.
 - Voice messages processed as if user typed the text
 
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 
 ### 📚 Persistent Memory
@@ -99,6 +114,8 @@ Send **`stop`** at any time to immediately cancel a running task.
 - System state management (heartbeat, version, stats)
 
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### 🧬 Self-Evolving Skills
@@ -110,16 +127,28 @@ Send **`stop`** at any time to immediately cancel a running task.
 - Built-in vs AI-created skill separation
 
 </td>
+<td width="50%" valign="top">
+
+### 🛡️ Self-Recovery & Error Handling
+- **Watchdog** monitors all subsystems continuously
+- Auto-restarts crashed cognition loops
+- Stale heartbeat detection and alerting
+- **API circuit breaker** — detects 403/auth errors instantly, stops retries, sends clear fix instructions
+- Responsive to new API keys without restart
+- Graceful shutdown with OS signal handling
+
+</td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 🛡️ Self-Recovery
-- **Watchdog** monitors all subsystems continuously
-- Auto-restarts crashed cognition loops
-- Stale heartbeat detection and alerting
-- Graceful shutdown with OS signal handling
-- Restart attempt tracking with configurable limits
+### 🤖 Autonomous Engine
+- Background self-directed goal generation & execution
+- Periodic self-reflection to find capability gaps
+- Goal planning, step-by-step execution, activity logging
+- User can query "what are you doing?" at any time
+- Pauses during user conversations, resumes after
+- Backs off automatically on API errors
 
 </td>
 <td width="50%" valign="top">
@@ -156,9 +185,11 @@ Send **`stop`** at any time to immediately cancel a running task.
           ▼                    ▼
 ┌──────────────────┐  ┌──────────────────────────────────────┐
 │   Brain (LLM)    │  │         Tool Dispatcher               │
-│  NVIDIA AI API   │  │  51+ tools across 11 skill modules   │
+│  NVIDIA AI API   │  │  56+ tools across 12 skill modules   │
 │  Chain-of-thought│  │  + dynamically created AI skills      │
 │  JSON decisions  │  │  Timeout protection per tool call     │
+│  API circuit     │  │                                      │
+│  breaker (403)   │  │                                      │
 └────────┬─────────┘  └──────────────────────────────────────┘
          │
          ▼
@@ -168,6 +199,13 @@ Send **`stop`** at any time to immediately cancel a running task.
 │  Knowledge Base  │  │  System health   │  │  Auto-restart  │
 │  Tasks/Summaries │  │  Skill evolution │  │  Stale detect  │
 └──────────────────┘  └──────────────────┘  └────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────────────────────────────┐
+│               Autonomous Engine (background)                  │
+│  Self-reflection → Goal generation → Step execution          │
+│  Pauses on user activity • Backs off on API errors           │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -187,6 +225,7 @@ Sharkon AI/
     ├── tools.py                 # Tool dispatcher with timeout & coercion
     ├── telegram_handler.py      # Telegram bot (aiogram v3)
     ├── cognition_loop.py        # Background autonomous loop
+    ├── autonomous_engine.py     # Self-directed goal system
     ├── watchdog.py              # Self-recovery monitor
     ├── logger.py                # Rotating file + console logging
     ├── database.db              # SQLite database (auto-created)
@@ -197,6 +236,7 @@ Sharkon AI/
     │   ├── __init__.py          # Dynamic skill loader & registry
     │   ├── system_commands.py   # CMD, PowerShell, Python execution
     │   ├── file_operations.py   # File read/write/search/PDF/send
+    │   ├── web_browser.py       # Web search, browse, screenshot, forms ← NEW
     │   ├── gui_automation.py    # Mouse, keyboard, drag & drop
     │   ├── screen_vision.py     # Screenshot, OCR, click-by-text
     │   ├── audio_transcription.py  # Voice-to-text
@@ -233,6 +273,15 @@ Sharkon AI/
 | `create_pdf` | Generate a PDF document |
 | `send_file` | Send an existing file as Telegram document |
 | `send_image` | Send an image to the user |
+
+### 🌐 Web Browsing (NEW)
+| Tool | Description |
+|------|-------------|
+| `web_search` | Search DuckDuckGo — returns titles, URLs, snippets (fastest, no JS) |
+| `web_browse` | Fetch a URL and return clean text content; set `use_js=true` for SPAs |
+| `web_screenshot` | Headless screenshot of any URL → sent as photo to Telegram |
+| `web_interact` | Automate web pages: fill forms, click buttons, extract data |
+| `web_extract_data` | Smart extraction: emails, prices, links, phones, images, headings |
 
 ### GUI Automation
 | Tool | Description |
@@ -332,7 +381,15 @@ cd sharkon-ai
 pip install -r requirements.txt
 ```
 
-### 2. Configure
+### 2. Install Playwright browser (for web browsing)
+
+```bash
+playwright install chromium
+```
+
+> Only needed once. Downloads a headless Chromium (~200 MB). Required for `web_screenshot`, `web_interact`, and JS-heavy `web_browse`.
+
+### 3. Configure
 
 Copy the example config and fill in your credentials:
 
@@ -351,7 +408,7 @@ NVIDIA_API_KEY     = "nvapi-your-key"   # NVIDIA AI endpoint key
 
 > **Tip:** Send `/start` to [@userinfobot](https://t.me/userinfobot) on Telegram to get your user ID.
 
-### 3. Run
+### 4. Run
 
 ```bash
 cd sharkonai
@@ -362,10 +419,11 @@ You'll see the startup banner:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║                      A I   v 3 . 0                        ║
+║                      A I   v 4 . 0                        ║
 ║                                                           ║
-║   🧠 Enhanced Brain • ⛓️ 25-Step Chains • 🔧 51+ Tools   ║
-║   🧬 Self-Evolving • 📚 Memory • 🛡️ Self-Recovery       ║
+║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 56+ Tools ║
+║   🌐 Web Browsing • 🧬 Self-Evolving • 📚 Memory         ║
+║   🤖 Self-Directing • 🎯 Goal Engine • 💬 Non-Blocking   ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
 
@@ -378,7 +436,12 @@ Open your Telegram bot and start chatting!
 | You say | SharkonAI does |
 |---------|---------------|
 | `What's my IP address?` | Runs a system command and reports the result |
-| `Take a screenshot` | Captures the screen and sends the image |
+| `Search for the latest Python 3.13 release notes` | `web_search` → reads highlights from snippet |
+| `Browse https://example.com and summarize it` | `web_browse` → returns clean text summary |
+| `Take a screenshot of google.com` | `web_screenshot` → sends the photo to Telegram |
+| `Find all email addresses on https://example.com` | `web_extract_data` → returns list of emails |
+| `Login to site X, fill form Y, submit` | `web_interact` with actions JSON |
+| `Take a desktop screenshot` | Captures the screen and sends the image |
 | `Open Chrome and go to github.com` | Launches Chrome, types the URL, presses Enter (multi-step) |
 | `Create a PDF report of my system info` | Gathers system info → generates a PDF → sends it to you |
 | `Remember that my server IP is 192.168.1.100` | Stores it in permanent knowledge base |
@@ -392,14 +455,13 @@ Open your Telegram bot and start chatting!
 
 SharkonAI can autonomously execute up to **25 steps** for complex tasks. For example:
 
-> **You:** *"Find all .py files in my project, count the lines of code in each, and create a summary PDF"*
+> **You:** *"Search for the top 5 Python web frameworks, browse each homepage, and create a comparison PDF"*
 
 SharkonAI will:
-1. `find_files` — Search for `.py` files
-2. `read_file` — Read each file (multiple steps)
-3. `run_python` — Count lines
-4. `create_pdf` — Generate the report
-5. `send_file` — Deliver it to you
+1. `web_search` — Find the top 5 frameworks
+2. `web_browse` — Read each homepage (×5 steps)
+3. `create_pdf` — Generate the comparison report
+4. `send_file` — Deliver it to you
 
 All automatically, with real-time status updates in chat.
 
@@ -436,6 +498,8 @@ All settings live in `sharkonai/config.py`:
 | `COGNITION_INTERVAL_SECONDS` | `60` | Background cognition loop interval |
 | `SKILL_EVOLUTION_ENABLED` | `True` | Allow autonomous skill creation |
 | `SKILL_EVOLUTION_INTERVAL` | `30` | Cognition ticks between evolution checks |
+| `AUTONOMOUS_ENABLED` | `True` | Enable self-directed autonomous operation |
+| `AUTONOMOUS_CYCLE_SECONDS` | `120` | Autonomous engine cycle interval |
 | `MAX_CONTEXT_MESSAGES` | `50` | Messages included in LLM context |
 | `VOICE_LANGUAGES` | `["fr-FR", "en-US", "ar-SA"]` | Speech recognition language priority |
 | `WATCHDOG_CHECK_INTERVAL` | `30` | Health check interval (seconds) |
@@ -457,11 +521,55 @@ opencv-python>=4.8.0    # Webcam capture
 fpdf2>=2.7.0            # PDF generation
 SpeechRecognition>=3.10.0  # Voice-to-text
 pydub>=0.25.1           # Audio format conversion
+playwright>=1.40.0      # Headless browser (web browsing skill)
 ```
 
 **System requirements:**
 - [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) — for screen vision / OCR tools
 - [ffmpeg](https://ffmpeg.org/download.html) — for voice message audio conversion
+- Chromium (via `playwright install chromium`) — for web browsing / screenshot / form automation
+
+---
+
+## 🌐 Web Browsing
+
+SharkonAI can **search, read, screenshot, and automate** any website using a built-in Playwright browser.
+
+### Decision tree — fastest path first
+
+```
+Need info online?         → web_search        (fastest — no browser needed)
+Need to read a page?      → web_browse        (plain HTTP by default)
+JS-heavy page?            → web_browse use_js=true
+User wants to see a page? → web_screenshot    (Chromium → photo to Telegram)
+Need emails/prices/links? → web_extract_data  (smart regex, no JS)
+Fill a form / multi-step? → web_interact      (full Playwright automation)
+```
+
+### Example: search & browse
+
+```
+You:  What's the current price of Bitcoin?
+Bot:  web_search("bitcoin price usd") → reads snippet → answers instantly
+```
+
+```
+You:  Summarize the Wikipedia page for Python programming language
+Bot:  web_browse("https://en.wikipedia.org/wiki/Python_(programming_language)")
+      → returns clean text summary
+```
+
+### Example: form automation
+
+```json
+[
+  {"type": "goto",  "value": "https://example.com/login"},
+  {"type": "fill",  "selector": "#email",    "value": "you@example.com"},
+  {"type": "fill",  "selector": "#password", "value": "secret"},
+  {"type": "click", "selector": "button[type=submit]"},
+  {"type": "extract", "selector": ".welcome-msg", "extract_as": "greeting"}
+]
+```
 
 ---
 
@@ -502,11 +610,12 @@ SKILL_MAP = {"my_new_tool": my_new_tool}
 | Subsystem | File | Purpose |
 |-----------|------|---------|
 | **Main** | `main.py` | Entry point, starts all subsystems, graceful shutdown |
-| **Brain** | `brain.py` | LLM reasoning, JSON decisions, task classification |
+| **Brain** | `brain.py` | LLM reasoning, JSON decisions, task classification, API circuit breaker |
 | **Memory** | `memory.py` | SQLite persistence (messages, actions, knowledge, tasks) |
 | **Telegram** | `telegram_handler.py` | Bot interface, tool chains, stop command, voice/file handling |
 | **Tools** | `tools.py` | Tool dispatch with timeout, result coercion |
-| **Skills** | `skills/` | 11 built-in skill modules + dynamic loader |
+| **Skills** | `skills/` | 12 built-in skill modules + dynamic loader |
+| **Autonomous** | `autonomous_engine.py` | Self-directed goal generation & execution |
 | **Cognition** | `cognition_loop.py` | Background health checks, stats, skill evolution |
 | **Watchdog** | `watchdog.py` | Auto-restart, heartbeat monitoring |
 | **Logger** | `logger.py` | Rotating file + console logging |
@@ -523,7 +632,7 @@ SKILL_MAP = {"my_new_tool": my_new_tool}
 - **Fail-safe GUI** — PyAutoGUI fail-safe enabled (move mouse to top-left corner to abort)
 - Command timeouts prevent runaway processes
 
-> ⚠️ **Warning:** SharkonAI has full access to your system (commands, files, GUI). Only run it on machines you trust and keep your bot token / config private.
+> ⚠️ **Warning:** SharkonAI has full access to your system (commands, files, GUI, web). Only run it on machines you trust and keep your bot token / config private.
 
 ---
 
@@ -533,7 +642,9 @@ SKILL_MAP = {"my_new_tool": my_new_tool}
 - [x] Voice message transcription
 - [x] Self-evolving skill creation
 - [x] Task stop/cancel command
-- [ ] Web browsing skill (Playwright/Selenium integration)
+- [x] **Web browsing skill** (Playwright integration — search, browse, screenshot, forms)
+- [x] Autonomous engine (self-directed goal system)
+- [x] API circuit breaker (instant 403 detection, no wasted retries)
 - [ ] Scheduled tasks and cron-like automation
 - [ ] Multi-user support with role-based access
 - [ ] Plugin marketplace for community skills
