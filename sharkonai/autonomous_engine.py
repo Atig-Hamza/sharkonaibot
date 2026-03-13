@@ -130,6 +130,13 @@ class AutonomousEngine:
                     await asyncio.sleep(5)
                     continue
 
+                # Back off if the brain's API is unhealthy (e.g. 403 key error)
+                if self._brain and not self._brain.api_healthy:
+                    self._current_activity = "Paused (API error — check API key)"
+                    log.warning("Autonomous engine paused: brain API is unhealthy.")
+                    await asyncio.sleep(120)
+                    continue
+
                 await self._autonomous_cycle()
                 self._cycle_count += 1
 

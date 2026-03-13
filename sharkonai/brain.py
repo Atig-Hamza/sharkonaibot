@@ -124,6 +124,16 @@ EFFICIENCY RULES — Do NOT waste steps:
   • If a tool you created keeps failing, the bug is in the skill code. Use update_skill to fix it
     or delete it and recreate it properly.
 
+⚡ SMART TASK RESOLUTION — always finish missions via the SHORTEST path:
+  • Before ANYTHING else: ask "Is there a single tool that directly solves this?" → USE IT.
+  • If the answer is a web search away: web_search(query) → DONE. Not 5 steps, 1 step.
+  • If the task is a system command: execute_cmd/execute_powershell → DONE. One shot.
+  • If the task is file I/O: write_file/read_file → DONE. Never echo into files.
+  • NEVER decompose a task into more steps than it actually needs.
+  • NEVER add "verification" steps unless the result is genuinely uncertain.
+  • Chain tools only when one step is REQUIRED input for the next.
+  • Goal: minimum number of tool calls, maximum result quality.
+
 NEVER DO THESE:
   ✗ "I've set up the basics, you can continue from here" — NO, YOU finish it.
   ✗ "The task is partially complete" — NO, complete it fully.
@@ -266,6 +276,47 @@ HIGH-PRECISION GUI TOOLS — For advanced interactions:
       Use for: drawing, painting, holding interactive elements.
     • get_mouse_position(): Get current cursor (x,y), pixel color, screen size.
     • right_click_at(x, y): Open context menus quickly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WEB BROWSING — FASTEST PATH FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You have full web browsing capabilities. Always pick the FASTEST tool for the job:
+
+DECISION TREE — pick in order:
+  1. Need online info / current data / news?
+     → web_search(query) first. Fastest. Returns titles + URLs + snippets immediately.
+       If a snippet has the answer, YOU'RE DONE — don't browse the page.
+
+  2. Need to read a specific page (static site)?
+     → web_browse(url) with use_js=false (default). Plain HTTP, sub-second.
+
+  3. Need to read a JS-heavy page (React/Angular/SPAs)?
+     → web_browse(url, use_js=true). Playwright headless.
+
+  4. User wants to SEE a page visually?
+     → web_screenshot(url). Returns a photo directly to Telegram.
+
+  5. Need specific data (emails, prices, links, phones)?
+     → web_extract_data(url, target). Smart regex extractor, no JS needed.
+
+  6. Need to fill a form / click / login / multi-step flow?
+     → web_interact(url, actions_json). Full Playwright automation.
+
+⚡ SPEED RULES — NEVER waste steps:
+  • If web_search snippet answers the question → STOP, report the answer. No browsing needed.
+  • NEVER browse a URL to get info that's already in the search snippet.
+  • For research tasks: web_search → pick best URL → web_browse. That's 2 steps, not 10.
+  • For data extraction: web_extract_data is ALWAYS faster than writing your own regex.
+  • For screenshots: web_screenshot in ONE step — don't navigate manually.
+  • For forms: web_interact with a complete actions array — ONE tool call, not 5 separate ones.
+  • If a page requires login, use web_interact to handle the full login + action flow.
+
+SEARCH TIPS:
+  • Be specific: "site:reddit.com python async examples" > "python examples"
+  • For news: add "2024" or "2025" to queries for fresh results
+  • For prices: add "price" or "$" to make DDG surface product pages
+  • For docs: "site:docs.python.org <topic>" for official documentation
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SELF-EVOLUTION — AUTONOMOUS SKILL DEVELOPMENT
@@ -543,6 +594,8 @@ class Brain:
 
     def __init__(self, memory: Memory):
         self.memory = memory
+        self.api_healthy = True      # Set False on fatal 403 — stops all retries
+        self.api_error_msg = ""      # Human-readable description of the fatal error
         set_memory_ref(memory)  # Inject memory into tools for remember/recall
 
     def _classify_task(self, message: str) -> str:
@@ -580,6 +633,16 @@ class Brain:
             chain_context: Previous tool results if this is a continuation step
         """
         log.info(f"Brain processing: {user_message[:100]}...")
+
+        # Fast-fail: don't hammer the API when we know it's down
+        if not self.api_healthy:
+            return {
+                "thought": "API is unhealthy, skipping call.",
+                "action": "none",
+                "parameters": {},
+                "response": self.api_error_msg,
+                "continue": False,
+            }
 
         # Build rich context from memory
         context_bundle = await self.memory.get_context_bundle()
@@ -695,7 +758,28 @@ class Brain:
                 }
 
             except Exception as e:
+                err_str = str(e)
                 log.error(f"Brain error (attempt {attempt + 1}): {e}")
+
+                # 403 = invalid/expired API key — retrying is pointless
+                if "403" in err_str or "Forbidden" in err_str or "Authorization failed" in err_str:
+                    log.critical("NVIDIA API key is invalid or expired. Aborting retries.")
+                    msg = (
+                        "❌ NVIDIA API key error (403 Forbidden).\n"
+                        "The API key has expired or run out of credits.\n\n"
+                        "Fix: Go to https://build.nvidia.com → generate a new free API key "
+                        "→ update NVIDIA_API_KEY in sharkonai/config.py → restart the bot."
+                    )
+                    self.api_healthy = False
+                    self.api_error_msg = msg
+                    return {
+                        "thought": f"Fatal API auth error (403): {e}",
+                        "action": "none",
+                        "parameters": {},
+                        "response": msg,
+                        "continue": False,
+                    }
+
                 if attempt == CONFIG.MAX_RETRIES - 1:
                     return {
                         "thought": f"Error occurred: {e}",
