@@ -15,11 +15,12 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/v4.0-Stable-brightgreen?style=flat-square" alt="Version"/>
-  <img src="https://img.shields.io/badge/Tools-56+-blue?style=flat-square" alt="Tools"/>
+  <img src="https://img.shields.io/badge/Tools-60+-blue?style=flat-square" alt="Tools"/>
   <img src="https://img.shields.io/badge/Chain_Steps-25-orange?style=flat-square" alt="Chain Steps"/>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white" alt="Platform"/>
   <img src="https://img.shields.io/badge/Voice-Recognition-FF6F00?style=flat-square" alt="Voice"/>
   <img src="https://img.shields.io/badge/Web-Browsing-1a73e8?style=flat-square&logo=googlechrome&logoColor=white" alt="Web Browsing"/>
+  <img src="https://img.shields.io/badge/Scheduler-⏰_Cron-f59e0b?style=flat-square" alt="Scheduler"/>
   <img src="https://img.shields.io/badge/Self--Evolving-🧬-purple?style=flat-square" alt="Self-Evolving"/>
 </p>
 
@@ -27,7 +28,7 @@
 
 ## 🌊 Overview
 
-**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain (NVIDIA-hosted models) with **56+ executable tools** to perform virtually anything — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision, to **searching and browsing the full web**, to **creating its own new skills at runtime**.
+**SharkonAI** is a fully autonomous, self-recovering AI agent that lives in Telegram. It combines a powerful LLM brain (NVIDIA-hosted models) with **60+ executable tools** to perform virtually anything — from running system commands and writing code, to controlling your desktop GUI with pixel-perfect precision, to **searching and browsing the full web**, to **scheduling recurring tasks**, to **creating its own new skills at runtime**.
 
 Think of it as your personal AI operator that can **see your screen**, **type on your keyboard**, **click with your mouse**, **manage files**, **browse the web**, **listen to your voice**, **remember everything**, and **evolve its own capabilities** — all orchestrated through a simple Telegram chat.
 
@@ -53,11 +54,12 @@ Send **`stop`** at any time to immediately cancel a running task.
 </td>
 <td width="50%" valign="top">
 
-### 🔧 56+ Executable Tools
+### 🔧 60+ Executable Tools
 - **System**: CMD, PowerShell, Python execution
 - **Files**: Read, write, append, search, create PDFs, send files
 - **GUI**: Mouse, keyboard, drag & drop, screenshots, OCR vision
 - **Web**: Search, browse, screenshot, form automation, data extraction
+- **Scheduler**: Cron tasks, recurring automation, one-shot reminders
 - **Network**: HTTP requests, file downloads
 - **Memory**: Permanent knowledge storage & recall
 - **Media**: Webcam capture, image & file delivery
@@ -140,6 +142,19 @@ Send **`stop`** at any time to immediately cancel a running task.
 </td>
 </tr>
 <tr>
+<td width="50%" valign="top">
+
+### ⏰ Cron Scheduler (NEW)
+- Schedule **any task** to run once or on a recurring basis
+- Supports: specific datetime, interval, daily, weekly, cron expressions
+- Results delivered to Telegram automatically when tasks fire
+- `schedule_task` — create from natural language ("every day at 09:00")
+- `list_scheduled_tasks` — see all active tasks and next run times
+- `cancel_scheduled_task` — disable by ID or name
+- `run_task_now` — trigger immediately without waiting
+- Persisted in SQLite — survives restarts
+
+</td>
 <td width="50%" valign="top">
 
 ### 🤖 Autonomous Engine
@@ -226,6 +241,7 @@ Sharkon AI/
     ├── telegram_handler.py      # Telegram bot (aiogram v3)
     ├── cognition_loop.py        # Background autonomous loop
     ├── autonomous_engine.py     # Self-directed goal system
+    ├── scheduler_engine.py      # Cron-like task scheduler ← NEW
     ├── watchdog.py              # Self-recovery monitor
     ├── logger.py                # Rotating file + console logging
     ├── database.db              # SQLite database (auto-created)
@@ -237,6 +253,7 @@ Sharkon AI/
     │   ├── system_commands.py   # CMD, PowerShell, Python execution
     │   ├── file_operations.py   # File read/write/search/PDF/send
     │   ├── web_browser.py       # Web search, browse, screenshot, forms ← NEW
+    │   ├── scheduler.py         # Cron task scheduling tools ← NEW
     │   ├── gui_automation.py    # Mouse, keyboard, drag & drop
     │   ├── screen_vision.py     # Screenshot, OCR, click-by-text
     │   ├── audio_transcription.py  # Voice-to-text
@@ -328,6 +345,14 @@ Sharkon AI/
 |------|-------------|
 | `remember` | Store a fact / preference in permanent memory |
 | `recall` | Retrieve stored knowledge by category or search |
+
+### ⏰ Scheduler (NEW)
+| Tool | Description |
+|------|-------------|
+| `schedule_task` | Schedule a task to run once or repeatedly (interval/daily/weekly/cron) |
+| `list_scheduled_tasks` | List all active scheduled tasks with next run times and run counts |
+| `cancel_scheduled_task` | Disable a scheduled task by ID or label |
+| `run_task_now` | Immediately trigger a scheduled task without waiting |
 
 ### Network
 | Tool | Description |
@@ -421,8 +446,8 @@ You'll see the startup banner:
 ╔═══════════════════════════════════════════════════════════╗
 ║                      A I   v 4 . 0                        ║
 ║                                                           ║
-║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 56+ Tools ║
-║   🌐 Web Browsing • 🧬 Self-Evolving • 📚 Memory         ║
+║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 60+ Tools ║
+║   🌐 Web Browsing • ⏰ Cron Scheduler • 🧬 Self-Evolving  ║
 ║   🤖 Self-Directing • 🎯 Goal Engine • 💬 Non-Blocking   ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
@@ -439,6 +464,11 @@ Open your Telegram bot and start chatting!
 | `Search for the latest Python 3.13 release notes` | `web_search` → reads highlights from snippet |
 | `Browse https://example.com and summarize it` | `web_browse` → returns clean text summary |
 | `Take a screenshot of google.com` | `web_screenshot` → sends the photo to Telegram |
+| `Remind me every day at 9am to check emails` | `schedule_task` — daily reminder, fires automatically |
+| `Check CPU usage every 30 minutes and report` | `schedule_task` — recurring system monitor |
+| `Run a disk cleanup every sunday at 2am` | `schedule_task` — weekly maintenance task |
+| `Show me all scheduled tasks` | `list_scheduled_tasks` — lists with next run times |
+| `Cancel the CPU monitor task` | `cancel_scheduled_task` — by label |
 | `Find all email addresses on https://example.com` | `web_extract_data` → returns list of emails |
 | `Login to site X, fill form Y, submit` | `web_interact` with actions JSON |
 | `Take a desktop screenshot` | Captures the screen and sends the image |
@@ -531,6 +561,48 @@ playwright>=1.40.0      # Headless browser (web browsing skill)
 
 ---
 
+## ⏰ Scheduled Tasks
+
+Schedule **any task** in natural language — the bot executes it automatically and delivers results to Telegram.
+
+### Supported schedule formats
+
+| Format | Example | Type |
+|--------|---------|------|
+| Exact date/time | `"2025-06-01 14:30"` | One-shot |
+| Every N minutes | `"every 30 minutes"` | Interval |
+| Every N hours | `"every 2 hours"` | Interval |
+| Daily at a time | `"every day at 09:00"` | Daily |
+| Weekly on a weekday | `"every monday at 09:00"` | Weekly |
+| Cron expression | `"cron: 0 9 * * 1-5"` | Cron |
+
+### Examples
+
+```
+You: Check my CPU and RAM every 30 minutes and report
+Bot: schedule_task("Get CPU usage and RAM usage and report them", "every 30 minutes", "system-monitor")
+     → Task scheduled! Next run in 30 minutes. Results sent to Telegram automatically.
+
+You: Take a screenshot of my desktop every morning at 8am
+Bot: schedule_task("Take a screenshot of the desktop and send it", "every day at 08:00", "morning-shot")
+
+You: Search for Bitcoin price every hour
+Bot: schedule_task("Search for current Bitcoin price and report it", "every 1 hour", "btc-tracker")
+
+You: Show me all scheduled tasks
+Bot: list_scheduled_tasks()
+     → #1 [interval] "system-monitor" — next: 2025-06-01 10:30:00
+        #2 [daily]    "morning-shot"   — next: 2025-06-02 08:00:00
+        #3 [interval] "btc-tracker"    — next: 2025-06-01 11:00:00
+
+You: Cancel the BTC tracker
+Bot: cancel_scheduled_task("btc-tracker") → Done.
+```
+
+Scheduled tasks persist across restarts (stored in SQLite). They fire every 30 seconds of wall-clock checking.
+
+---
+
 ## 🌐 Web Browsing
 
 SharkonAI can **search, read, screenshot, and automate** any website using a built-in Playwright browser.
@@ -614,8 +686,9 @@ SKILL_MAP = {"my_new_tool": my_new_tool}
 | **Memory** | `memory.py` | SQLite persistence (messages, actions, knowledge, tasks) |
 | **Telegram** | `telegram_handler.py` | Bot interface, tool chains, stop command, voice/file handling |
 | **Tools** | `tools.py` | Tool dispatch with timeout, result coercion |
-| **Skills** | `skills/` | 12 built-in skill modules + dynamic loader |
+| **Skills** | `skills/` | 13 built-in skill modules + dynamic loader |
 | **Autonomous** | `autonomous_engine.py` | Self-directed goal generation & execution |
+| **Scheduler** | `scheduler_engine.py` | Cron-like background task scheduling |
 | **Cognition** | `cognition_loop.py` | Background health checks, stats, skill evolution |
 | **Watchdog** | `watchdog.py` | Auto-restart, heartbeat monitoring |
 | **Logger** | `logger.py` | Rotating file + console logging |
@@ -645,7 +718,7 @@ SKILL_MAP = {"my_new_tool": my_new_tool}
 - [x] **Web browsing skill** (Playwright integration — search, browse, screenshot, forms)
 - [x] Autonomous engine (self-directed goal system)
 - [x] API circuit breaker (instant 403 detection, no wasted retries)
-- [ ] Scheduled tasks and cron-like automation
+- [x] **Scheduled tasks & cron automation** (once, interval, daily, weekly, cron expressions)
 - [ ] Multi-user support with role-based access
 - [ ] Plugin marketplace for community skills
 - [ ] Linux / macOS GUI automation support

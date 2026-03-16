@@ -319,6 +319,40 @@ SEARCH TIPS:
   • For docs: "site:docs.python.org <topic>" for official documentation
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCHEDULED TASKS & CRON AUTOMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You can schedule ANY task to run automatically — once or recurring.
+Results are delivered to the user via Telegram automatically when the task fires.
+
+TOOLS:
+  • schedule_task(description, schedule, label)
+      description: what to do when it fires ("take a screenshot", "check disk space", etc.)
+      label: short name (optional)
+      schedule formats:
+        "2025-06-01 14:30"          → runs once at this date/time
+        "every 30 minutes"          → repeating every 30 min
+        "every 2 hours"             → repeating every 2 hours
+        "every 1 day"               → every 24 hours
+        "every day at 09:00"        → daily at 9 AM
+        "every monday at 09:00"     → weekly on Mondays
+        "cron: 0 9 * * 1-5"         → Mon-Fri at 9 AM (standard cron)
+
+  • list_scheduled_tasks()          → see all active tasks with next run times
+  • cancel_scheduled_task(task_id)  → disable a task by ID or label
+  • run_task_now(task_id)           → trigger a task immediately
+
+WHEN TO USE SCHEDULING:
+  • User says "remind me every morning", "check X every hour" → schedule_task
+  • User says "run this at 3pm" or "every weekday" → schedule_task
+  • User asks "what's scheduled?" → list_scheduled_tasks
+  • User says "stop the daily check" → cancel_scheduled_task
+
+Each scheduled task is a natural-language command you'd normally execute yourself.
+Write descriptions as if you're giving yourself instructions: "Check CPU usage and report it"
+"Search for Bitcoin price and report", "Take a screenshot of the desktop", etc.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SELF-EVOLUTION — AUTONOMOUS SKILL DEVELOPMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -623,7 +657,7 @@ class Brain:
 
         return "balanced"
 
-    async def think(self, user_message: str, chain_context: list = None) -> dict:
+    async def think(self, user_message: str, chain_context: list = None, isolated: bool = False) -> dict:
         """
         Process a user message through the AI model.
         Returns a structured decision dict with thought, action, parameters, response, continue.
@@ -631,6 +665,7 @@ class Brain:
         Args:
             user_message: The user's input text
             chain_context: Previous tool results if this is a continuation step
+            isolated: If True, skip conversation history (used by scheduler to avoid context bleed)
         """
         log.info(f"Brain processing: {user_message[:100]}...")
 
@@ -644,12 +679,16 @@ class Brain:
                 "continue": False,
             }
 
-        # Build rich context from memory
-        context_bundle = await self.memory.get_context_bundle()
-
-        # Build conversation history for messages
-        history = context_bundle["messages"]
-        recent_actions = context_bundle["actions"]
+        if isolated:
+            # Isolated mode: no conversation history, no recent actions — clean slate
+            context_bundle = {}
+            history = []
+            recent_actions = []
+        else:
+            # Build rich context from memory
+            context_bundle = await self.memory.get_context_bundle()
+            history = context_bundle["messages"]
+            recent_actions = context_bundle["actions"]
 
         # Build the system prompt with memory context
         messages = [{"role": "system", "content": _build_system_prompt(context_bundle)}]
@@ -694,13 +733,35 @@ class Brain:
             temperature = 0.5
 
         # Call the NVIDIA model with robust retry logic
+        last_raw = ""  # Preserve previous raw content across retries
         for attempt in range(CONFIG.MAX_RETRIES):
             try:
                 current_temp = temperature
                 extra_messages = []
 
-                # On retry, add stronger JSON enforcement and lower temperature
-                if attempt > 0:
+                # On retry, include the previous raw response — the model may have written
+                # valid content as plain text; ask it to wrap that content in JSON
+                if attempt > 0 and last_raw:
+                    log.info(f"Retrying with JSON wrap enforcement (attempt {attempt + 1})...")
+                    current_temp = max(0.1, temperature - 0.2 * attempt)
+                    # Truncate previous content to avoid token explosion
+                    prev_content = last_raw[:1400].replace('"', '\\"').replace('\n', '\\n')
+                    extra_messages.append({
+                        "role": "assistant",
+                        "content": last_raw[:1400],  # Show what the model previously said
+                    })
+                    extra_messages.append({
+                        "role": "user",
+                        "content": (
+                            "⚠️ Your last response was NOT valid JSON. "
+                            "PUT YOUR PREVIOUS RESPONSE TEXT inside the 'response' field of this JSON object — "
+                            "do NOT change or summarise the content, just wrap it:\n"
+                            '{"thought":"wrapping previous output","action":"none","parameters":{},'
+                            '"response":"<your previous text here, escape quotes>","continue":false}\n'
+                            "ONLY the JSON object. No other text."
+                        ),
+                    })
+                elif attempt > 0:
                     log.info(f"Retrying with stronger JSON enforcement (attempt {attempt + 1})...")
                     current_temp = max(0.1, temperature - 0.2 * attempt)
                     extra_messages.append({
@@ -725,6 +786,7 @@ class Brain:
                 )
 
                 raw = response.choices[0].message.content or ""
+                last_raw = raw  # Save for retry context
                 log.info(f"Raw AI response (attempt {attempt + 1}, len={len(raw)}): {raw[:300]}...")
 
                 # Parse structured JSON

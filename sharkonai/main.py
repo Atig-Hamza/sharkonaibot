@@ -8,6 +8,7 @@ Starts all subsystems:
   • Telegram Bot (aiogram v3) — Non-blocking with concurrent user interaction
   • Cognition Loop — System health monitoring and skill evolution
   • Autonomous Engine — Self-directed goal generation, planning, and execution
+  • Scheduler Engine — Cron-like task scheduling and recurring automation
   • Watchdog — Self-recovery system
 """
 
@@ -25,6 +26,7 @@ from memory import Memory
 from brain import Brain
 from cognition_loop import CognitionLoop
 from autonomous_engine import AutonomousEngine
+from scheduler_engine import SchedulerEngine, set_scheduler_engine
 from watchdog import Watchdog
 from telegram_handler import init_handler, create_bot_and_dispatcher
 from tools import TOOL_MAP
@@ -43,8 +45,8 @@ BANNER = r"""
 ║   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚══╝  ║
 ║                      A I   v 4 . 0                        ║
 ║                                                           ║
-║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 56+ Tools ║
-║   🌐 Web Browsing • 🧬 Self-Evolving • 📚 Memory         ║
+║   🧠 Autonomous Brain • ⛓️ 25-Step Chains • 🔧 60+ Tools ║
+║   🌐 Web Browsing • ⏰ Cron Scheduler • 🧬 Self-Evolving  ║
 ║   🤖 Self-Directing • 🎯 Goal Engine • 💬 Non-Blocking   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
@@ -59,7 +61,7 @@ async def main():
     log.info("=" * 60)
 
     # ── 1. Memory System ──
-    log.info("[1/6] Initializing Enhanced Memory System...")
+    log.info("[1/7] Initializing Enhanced Memory System...")
     memory = Memory()
     msg_count = await memory.get_message_count()
     action_count = await memory.get_action_count()
@@ -76,14 +78,14 @@ async def main():
         log.info("  Stored initial system knowledge.")
 
     # ── 2. Brain ──
-    log.info("[2/6] Initializing Enhanced AI Brain...")
+    log.info("[2/7] Initializing Enhanced AI Brain...")
     brain = Brain(memory)
     log.info(f"  Model: {CONFIG.NVIDIA_MODEL}")
     log.info(f"  Max chain steps: {CONFIG.MAX_CHAIN_STEPS}")
     log.info(f"  Max tokens: {CONFIG.MAX_TOKENS}")
 
     # ── 3. Cognition Loop ──
-    log.info("[3/6] Starting Cognition Loop...")
+    log.info("[3/7] Starting Cognition Loop...")
     cognition = CognitionLoop(memory)
     cognition.set_brain(brain)  # Enable autonomous skill evolution
     await cognition.start()
@@ -91,24 +93,34 @@ async def main():
     # ── 4. Autonomous Engine ──
     autonomous = None
     if CONFIG.AUTONOMOUS_ENABLED:
-        log.info("[4/6] Starting Autonomous Engine...")
+        log.info("[4/7] Starting Autonomous Engine...")
         autonomous = AutonomousEngine(memory)
         autonomous.set_brain(brain)
         await autonomous.start()
         log.info(f"  Cycle interval: {CONFIG.AUTONOMOUS_CYCLE_SECONDS}s")
         log.info(f"  User pause: {CONFIG.AUTONOMOUS_PAUSE_AFTER_USER}s")
     else:
-        log.info("[4/6] Autonomous Engine: DISABLED")
+        log.info("[4/7] Autonomous Engine: DISABLED")
 
-    # ── 5. Watchdog ──
-    log.info("[5/6] Starting Watchdog...")
+    # ── 5. Scheduler Engine ──
+    log.info("[5/7] Starting Scheduler Engine...")
+    scheduler = SchedulerEngine(CONFIG.DATABASE_PATH)
+    scheduler.set_brain(brain)
+    set_scheduler_engine(scheduler)
+    await scheduler.start()
+
+    # ── 6. Watchdog ──
+    log.info("[6/7] Starting Watchdog...")
     watchdog = Watchdog(memory, cognition)
     await watchdog.start()
 
-    # ── 6. Telegram Bot ──
-    log.info("[6/6] Starting Telegram Bot...")
+    # ── 7. Telegram Bot ──
+    log.info("[7/7] Starting Telegram Bot...")
     init_handler(memory, brain, autonomous)
     bot, dp = create_bot_and_dispatcher()
+
+    # Inject bot into scheduler so it can deliver task results
+    scheduler.set_bot(bot)
 
     # Store startup state
     await memory.set_state("status", "running")
@@ -124,6 +136,7 @@ async def main():
     log.info(f"  Max chain depth: {CONFIG.MAX_CHAIN_STEPS}")
     log.info(f"  Skill evolution: {'enabled' if CONFIG.SKILL_EVOLUTION_ENABLED else 'disabled'}")
     log.info(f"  Autonomous engine: {'enabled' if CONFIG.AUTONOMOUS_ENABLED else 'disabled'}")
+    log.info(f"  Scheduler: active (check every {SchedulerEngine.CHECK_INTERVAL}s)")
     log.info("=" * 60)
 
     # Log startup activity
@@ -137,6 +150,7 @@ async def main():
         await memory.set_state("status", "stopping")
         if autonomous:
             await autonomous.stop()
+        await scheduler.stop()
         await watchdog.stop()
         await cognition.stop()
         await bot.session.close()
